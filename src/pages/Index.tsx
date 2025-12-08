@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useBrandData } from '@/hooks/useBrandData';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { BrandSearch } from '@/components/dashboard/BrandSearch';
+import { BrandFilters } from '@/components/dashboard/BrandFilters';
 import { BrandRadarChart } from '@/components/dashboard/BrandRadarChart';
 import { StrategicInsight } from '@/components/dashboard/StrategicInsight';
 import { BrandTable } from '@/components/dashboard/BrandTable';
@@ -12,6 +13,19 @@ const Index = () => {
   const { brands, loading, error, stats } = useBrandData();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+
+  const filteredBrands = useMemo(() => {
+    let result = brands;
+    if (selectedCountry) {
+      result = result.filter(b => b.Country === selectedCountry);
+    }
+    if (selectedIndustry) {
+      result = result.filter(b => b.Industry === selectedIndustry);
+    }
+    return result;
+  }, [brands, selectedCountry, selectedIndustry]);
 
   if (loading) {
     return (
@@ -40,12 +54,21 @@ const Index = () => {
       <DashboardHeader />
       
       <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* Search */}
-        <BrandSearch value={searchQuery} onChange={setSearchQuery} />
+        {/* Search and Filters */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <BrandSearch value={searchQuery} onChange={setSearchQuery} />
+          <BrandFilters
+            brands={brands}
+            selectedCountry={selectedCountry}
+            selectedIndustry={selectedIndustry}
+            onCountryChange={setSelectedCountry}
+            onIndustryChange={setSelectedIndustry}
+          />
+        </div>
 
         {/* Chart */}
         <BrandRadarChart
-          brands={brands}
+          brands={filteredBrands}
           searchQuery={searchQuery}
           selectedBrand={selectedBrand}
           onSelectBrand={setSelectedBrand}
@@ -62,7 +85,7 @@ const Index = () => {
 
         {/* Data Table */}
         <BrandTable
-          brands={brands}
+          brands={filteredBrands}
           searchQuery={searchQuery}
           selectedBrand={selectedBrand}
           onSelectBrand={setSelectedBrand}
