@@ -1,12 +1,75 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { useBrandData } from '@/hooks/useBrandData';
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
+import { BrandSearch } from '@/components/dashboard/BrandSearch';
+import { BrandRadarChart } from '@/components/dashboard/BrandRadarChart';
+import { StrategicInsight } from '@/components/dashboard/StrategicInsight';
+import { BrandTable } from '@/components/dashboard/BrandTable';
+import { Brand } from '@/types/brand';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+  const { brands, loading, error, stats } = useBrandData();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading brand data...</p>
+        </div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <p className="text-destructive font-medium">Error loading data</p>
+          <p className="text-muted-foreground text-sm mt-1">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <DashboardHeader />
+      
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Search */}
+        <BrandSearch value={searchQuery} onChange={setSearchQuery} />
+
+        {/* Chart */}
+        <BrandRadarChart
+          brands={brands}
+          searchQuery={searchQuery}
+          selectedBrand={selectedBrand}
+          onSelectBrand={setSelectedBrand}
+          medianVolatility={stats.medianVolatility}
+          medianInflation={stats.medianInflation}
+        />
+
+        {/* Strategic Insight */}
+        <StrategicInsight
+          brand={selectedBrand}
+          medianVolatility={stats.medianVolatility}
+          medianInflation={stats.medianInflation}
+        />
+
+        {/* Data Table */}
+        <BrandTable
+          brands={brands}
+          searchQuery={searchQuery}
+          selectedBrand={selectedBrand}
+          onSelectBrand={setSelectedBrand}
+          medianVolatility={stats.medianVolatility}
+          medianInflation={stats.medianInflation}
+        />
+      </main>
     </div>
   );
 };
