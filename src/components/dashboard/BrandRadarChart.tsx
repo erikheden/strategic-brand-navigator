@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import {
   ScatterChart,
   Scatter,
@@ -13,7 +13,8 @@ import {
 } from 'recharts';
 import { Brand, getQuadrant, QUADRANT_CONFIG, QuadrantType } from '@/types/brand';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Radar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Radar, ZoomIn, RotateCcw } from 'lucide-react';
 
 interface BrandRadarChartProps {
   brands: Brand[];
@@ -38,7 +39,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     const config = QUADRANT_CONFIG[quadrant];
 
     return (
-      <div className="bg-card border border-border rounded-lg shadow-lg p-3 max-w-xs">
+      <div className="bg-card border border-border rounded-lg shadow-lg p-3 max-w-xs z-50">
         <p className="font-semibold text-foreground">{brand.Brand}</p>
         <p className="text-sm text-muted-foreground">{brand.Country}</p>
         <div className="mt-2 space-y-1 text-sm">
@@ -65,6 +66,8 @@ export function BrandRadarChart({
   medianVolatility,
   medianInflation,
 }: BrandRadarChartProps) {
+  const [zoomedQuadrant, setZoomedQuadrant] = useState<QuadrantType | null>(null);
+
   const chartData = useMemo(() => {
     return brands
       .filter(b => b.Inflation_Performance !== null)
@@ -81,7 +84,8 @@ export function BrandRadarChart({
       }));
   }, [brands, searchQuery, medianVolatility, medianInflation]);
 
-  const { xDomain, yDomain } = useMemo(() => {
+  // Calculate full domain bounds
+  const fullDomain = useMemo(() => {
     if (chartData.length === 0) return { xDomain: [-50, 0] as [number, number], yDomain: [-20, 40] as [number, number] };
     
     const xValues = chartData.map(d => d.x);
@@ -101,6 +105,39 @@ export function BrandRadarChart({
     };
   }, [chartData]);
 
+  // Calculate zoomed domain based on selected quadrant
+  const { xDomain, yDomain } = useMemo(() => {
+    if (!zoomedQuadrant) return fullDomain;
+
+    const invertedMedianX = -medianVolatility;
+    const padding = 2;
+
+    switch (zoomedQuadrant) {
+      case 'fortress': // High Stability (right), High Growth (top)
+        return {
+          xDomain: [invertedMedianX - padding, fullDomain.xDomain[1]] as [number, number],
+          yDomain: [medianInflation - padding, fullDomain.yDomain[1]] as [number, number],
+        };
+      case 'challenger': // Low Stability (left), High Growth (top)
+        return {
+          xDomain: [fullDomain.xDomain[0], invertedMedianX + padding] as [number, number],
+          yDomain: [medianInflation - padding, fullDomain.yDomain[1]] as [number, number],
+        };
+      case 'sleeper': // High Stability (right), Low Growth (bottom)
+        return {
+          xDomain: [invertedMedianX - padding, fullDomain.xDomain[1]] as [number, number],
+          yDomain: [fullDomain.yDomain[0], medianInflation + padding] as [number, number],
+        };
+      case 'danger': // Low Stability (left), Low Growth (bottom)
+        return {
+          xDomain: [fullDomain.xDomain[0], invertedMedianX + padding] as [number, number],
+          yDomain: [fullDomain.yDomain[0], medianInflation + padding] as [number, number],
+        };
+      default:
+        return fullDomain;
+    }
+  }, [zoomedQuadrant, fullDomain, medianVolatility, medianInflation]);
+
   const getPointColor = useCallback((quadrant: QuadrantType) => {
     return QUADRANT_CONFIG[quadrant].color;
   }, []);
@@ -111,13 +148,34 @@ export function BrandRadarChart({
     }
   }, [onSelectBrand]);
 
+  const handleQuadrantZoom = (quadrant: QuadrantType) => {
+    setZoomedQuadrant(zoomedQuadrant === quadrant ? null : quadrant);
+  };
+
+  const resetZoom = () => {
+    setZoomedQuadrant(null);
+  };
+
   return (
     <Card className="shadow-card">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <Radar className="h-5 w-5 text-primary" />
-          SBI Strategic Brand Radar
-        </CardTitle>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <Radar className="h-5 w-5 text-primary" />
+            SBI Strategic Brand Radar
+          </CardTitle>
+          {zoomedQuadrant && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetZoom}
+              className="gap-1.5"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reset Zoom
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-[500px] w-full">
@@ -140,6 +198,7 @@ export function BrandRadarChart({
                 stroke="hsl(var(--chart-axis))"
                 fontSize={12}
                 tickLine={false}
+                allowDataOverflow
               >
                 <Label
                   value="← Low Stability          High Stability →"
@@ -162,6 +221,7 @@ export function BrandRadarChart({
                 stroke="hsl(var(--chart-axis))"
                 fontSize={12}
                 tickLine={false}
+                allowDataOverflow
               >
                 <Label
                   value="Growth Velocity"
@@ -200,11 +260,12 @@ export function BrandRadarChart({
               >
                 {chartData.map((entry, index) => {
                   const isSelected = selectedBrand?.Brand === entry.brand.Brand;
+                  const isInZoomedQuadrant = !zoomedQuadrant || entry.quadrant === zoomedQuadrant;
                   return (
                     <Cell
                       key={`cell-${index}`}
                       fill={getPointColor(entry.quadrant)}
-                      fillOpacity={isSelected ? 1 : 0.7}
+                      fillOpacity={isInZoomedQuadrant ? (isSelected ? 1 : 0.7) : 0.2}
                       stroke={isSelected ? 'hsl(var(--foreground))' : 'none'}
                       strokeWidth={isSelected ? 2 : 0}
                       r={isSelected ? 8 : 5}
@@ -216,27 +277,46 @@ export function BrandRadarChart({
           </ResponsiveContainer>
         </div>
 
-        {/* Quadrant Legend */}
+        {/* Quadrant Legend with Zoom */}
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-          {(Object.entries(QUADRANT_CONFIG) as [QuadrantType, typeof QUADRANT_CONFIG[QuadrantType]][]).map(([key, config]) => (
-            <div
-              key={key}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border"
-              style={{ 
-                backgroundColor: config.bgColor,
-                borderColor: `${config.color}30`,
-              }}
-            >
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: config.color }}
-              />
-              <span className="text-xs font-medium" style={{ color: config.color }}>
-                {config.emoji} {config.name}
-              </span>
-            </div>
-          ))}
+          {(Object.entries(QUADRANT_CONFIG) as [QuadrantType, typeof QUADRANT_CONFIG[QuadrantType]][]).map(([key, config]) => {
+            const isZoomed = zoomedQuadrant === key;
+            return (
+              <button
+                key={key}
+                onClick={() => handleQuadrantZoom(key)}
+                className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition-all hover:scale-[1.02] ${
+                  isZoomed ? 'ring-2 ring-offset-2 ring-current' : ''
+                }`}
+                style={{ 
+                  backgroundColor: config.bgColor,
+                  borderColor: isZoomed ? config.color : `${config.color}30`,
+                  color: config.color,
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: config.color }}
+                  />
+                  <span className="text-xs font-medium" style={{ color: config.color }}>
+                    {config.emoji} {config.name}
+                  </span>
+                </div>
+                <ZoomIn 
+                  className="h-3.5 w-3.5 opacity-50" 
+                  style={{ color: config.color }}
+                />
+              </button>
+            );
+          })}
         </div>
+
+        {zoomedQuadrant && (
+          <p className="mt-3 text-xs text-muted-foreground text-center">
+            Showing {QUADRANT_CONFIG[zoomedQuadrant].emoji} {QUADRANT_CONFIG[zoomedQuadrant].name} quadrant. Click again or "Reset Zoom" to view all.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
