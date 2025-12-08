@@ -1,0 +1,61 @@
+export interface Brand {
+  Brand: string;
+  Country: string;
+  Industry: string;
+  Current_Score: number;
+  Volatility: number;
+  Trend_Slope: number;
+  Inflation_Performance: number | null;
+  Cluster_Name: string;
+}
+
+export type QuadrantType = 'fortress' | 'challenger' | 'sleeper' | 'danger';
+
+export interface QuadrantInfo {
+  name: string;
+  emoji: string;
+  color: string;
+  bgColor: string;
+  recommendation: string;
+}
+
+export const QUADRANT_CONFIG: Record<QuadrantType, QuadrantInfo> = {
+  fortress: {
+    name: 'The Fortress',
+    emoji: '👑',
+    color: 'hsl(152, 69%, 31%)',
+    bgColor: 'hsl(152, 69%, 95%)',
+    recommendation: 'Maintain your market leadership through continuous innovation and brand reinforcement.',
+  },
+  challenger: {
+    name: 'The Challenger',
+    emoji: '🚀',
+    color: 'hsl(25, 95%, 53%)',
+    bgColor: 'hsl(25, 95%, 95%)',
+    recommendation: 'Focus on operational consistency to reduce volatility while maintaining growth momentum.',
+  },
+  sleeper: {
+    name: 'The Sleeper',
+    emoji: '🐢',
+    color: 'hsl(215, 16%, 47%)',
+    bgColor: 'hsl(215, 16%, 95%)',
+    recommendation: 'Identify untapped growth opportunities and consider strategic repositioning to accelerate performance.',
+  },
+  danger: {
+    name: 'Danger Zone',
+    emoji: '🚩',
+    color: 'hsl(0, 72%, 51%)',
+    bgColor: 'hsl(0, 72%, 96%)',
+    recommendation: 'Urgent action required: Stabilize operations and reassess market positioning immediately.',
+  },
+};
+
+export function getQuadrant(volatility: number, inflationPerformance: number | null, medianVolatility: number, medianInflation: number): QuadrantType {
+  const hasHighStability = volatility < medianVolatility;
+  const hasHighGrowth = (inflationPerformance ?? 0) > medianInflation;
+
+  if (hasHighStability && hasHighGrowth) return 'fortress';
+  if (!hasHighStability && hasHighGrowth) return 'challenger';
+  if (hasHighStability && !hasHighGrowth) return 'sleeper';
+  return 'danger';
+}
