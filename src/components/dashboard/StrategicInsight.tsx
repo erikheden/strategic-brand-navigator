@@ -1,23 +1,19 @@
 import { Brand, getQuadrant, QUADRANT_CONFIG, QuadrantType } from '@/types/brand';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Target, Lightbulb, HelpCircle } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 interface StrategicInsightProps {
   brand: Brand | null;
   medianVolatility: number;
   medianInflation: number;
 }
-
-export function StrategicInsight({ brand, medianVolatility, medianInflation }: StrategicInsightProps) {
+export function StrategicInsight({
+  brand,
+  medianVolatility,
+  medianInflation
+}: StrategicInsightProps) {
   if (!brand) {
-    return (
-      <Card className="shadow-card animate-fade-in">
+    return <Card className="shadow-card animate-fade-in">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold">
             <Lightbulb className="h-5 w-5 text-muted-foreground" />
@@ -29,27 +25,17 @@ export function StrategicInsight({ brand, medianVolatility, medianInflation }: S
             Select a brand from the chart or table to view strategic recommendations.
           </p>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  const quadrant = getQuadrant(
-    brand.Volatility,
-    brand.Inflation_Performance,
-    medianVolatility,
-    medianInflation
-  );
+  const quadrant = getQuadrant(brand.Volatility, brand.Inflation_Performance, medianVolatility, medianInflation);
   const config = QUADRANT_CONFIG[quadrant];
-
   const quadrantStyles: Record<QuadrantType, string> = {
     fortress: 'bg-fortress-bg text-fortress border-fortress/20',
     challenger: 'bg-challenger-bg text-challenger border-challenger/20',
     sleeper: 'bg-sleeper-bg text-sleeper border-sleeper/20',
-    danger: 'bg-danger-bg text-danger border-danger/20',
+    danger: 'bg-danger-bg text-danger border-danger/20'
   };
-
-  return (
-    <Card className="shadow-card animate-fade-in">
+  return <Card className="shadow-card animate-fade-in">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold">
           <Lightbulb className="h-5 w-5 text-primary" />
@@ -78,7 +64,7 @@ export function StrategicInsight({ brand, medianVolatility, medianInflation }: S
                     <HelpCircle className="h-3 w-3 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-[200px]">
-                    <p className="text-xs">The brand's current overall performance score based on key brand health metrics.</p>
+                    <p className="text-xs">The brand's official Sustainable Brand Index Score </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -129,6 +115,5 @@ export function StrategicInsight({ brand, medianVolatility, medianInflation }: S
           </p>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
