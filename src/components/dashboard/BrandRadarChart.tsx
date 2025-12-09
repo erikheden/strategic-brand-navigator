@@ -15,6 +15,12 @@ import { Brand, getQuadrant, QUADRANT_CONFIG, QuadrantType } from '@/types/brand
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Radar, ZoomIn, RotateCcw } from 'lucide-react';
+import {
+  Tooltip as TooltipUI,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface BrandRadarChartProps {
   brands: Brand[];
@@ -279,44 +285,75 @@ export function BrandRadarChart({
         </div>
 
         {/* Quadrant Legend with Zoom */}
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-          {(Object.entries(QUADRANT_CONFIG) as [QuadrantType, typeof QUADRANT_CONFIG[QuadrantType]][]).map(([key, config]) => {
-            const isZoomed = zoomedQuadrant === key;
-            return (
-              <button
-                key={key}
-                onClick={() => handleQuadrantZoom(key)}
-                className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition-all hover:scale-[1.02] ${
-                  isZoomed ? 'ring-2 ring-offset-2 ring-current' : ''
-                }`}
-                style={{ 
-                  backgroundColor: config.bgColor,
-                  borderColor: isZoomed ? config.color : `${config.color}30`,
-                  color: config.color,
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: config.color }}
-                  />
-                  <span className="text-xs font-medium" style={{ color: config.color }}>
-                    {config.emoji} {config.name}
-                  </span>
-                </div>
-                <ZoomIn 
-                  className="h-3.5 w-3.5 opacity-50" 
-                  style={{ color: config.color }}
-                />
-              </button>
-            );
-          })}
-        </div>
+        <TooltipProvider>
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+            {(Object.entries(QUADRANT_CONFIG) as [QuadrantType, typeof QUADRANT_CONFIG[QuadrantType]][]).map(([key, config]) => {
+              const isZoomed = zoomedQuadrant === key;
+              return (
+                <TooltipUI key={key}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleQuadrantZoom(key)}
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition-all hover:scale-[1.02] ${
+                        isZoomed ? 'ring-2 ring-offset-2 ring-current' : ''
+                      }`}
+                      style={{ 
+                        backgroundColor: config.bgColor,
+                        borderColor: isZoomed ? config.color : `${config.color}30`,
+                        color: config.color,
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: config.color }}
+                        />
+                        <span className="text-xs font-medium" style={{ color: config.color }}>
+                          {config.emoji} {config.name}
+                        </span>
+                      </div>
+                      <ZoomIn 
+                        className="h-3.5 w-3.5 opacity-50" 
+                        style={{ color: config.color }}
+                      />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent 
+                    side="top" 
+                    className="max-w-xs text-sm"
+                  >
+                    <p>{config.description}</p>
+                  </TooltipContent>
+                </TooltipUI>
+              );
+            })}
+          </div>
+        </TooltipProvider>
 
         {zoomedQuadrant && (
-          <p className="mt-3 text-xs text-muted-foreground text-center">
-            Showing {QUADRANT_CONFIG[zoomedQuadrant].emoji} {QUADRANT_CONFIG[zoomedQuadrant].name} quadrant. Click again or "Reset Zoom" to view all.
-          </p>
+          <div 
+            className="mt-4 p-4 rounded-lg border"
+            style={{ 
+              backgroundColor: QUADRANT_CONFIG[zoomedQuadrant].bgColor,
+              borderColor: QUADRANT_CONFIG[zoomedQuadrant].color,
+            }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">{QUADRANT_CONFIG[zoomedQuadrant].emoji}</span>
+              <h4 
+                className="font-semibold"
+                style={{ color: QUADRANT_CONFIG[zoomedQuadrant].color }}
+              >
+                {QUADRANT_CONFIG[zoomedQuadrant].name}
+              </h4>
+            </div>
+            <p 
+              className="text-sm"
+              style={{ color: QUADRANT_CONFIG[zoomedQuadrant].color }}
+            >
+              {QUADRANT_CONFIG[zoomedQuadrant].description}
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
