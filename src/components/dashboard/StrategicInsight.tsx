@@ -72,6 +72,16 @@ export function StrategicInsight({ brand, medianVolatility, medianInflation }: S
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
               <Target className="h-3.5 w-3.5" />
               Score
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[200px]">
+                    <p className="text-xs">The brand's current overall performance score based on key brand health metrics.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <p className="font-semibold text-lg">{brand.Current_Score.toFixed(1)}</p>
           </div>
