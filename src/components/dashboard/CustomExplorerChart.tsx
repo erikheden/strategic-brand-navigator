@@ -1,0 +1,423 @@
+import { useState, useMemo, useCallback } from 'react';
+import {
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  ZAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  ReferenceLine,
+  Label,
+} from 'recharts';
+import { Brand } from '@/types/brand';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SlidersHorizontal } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+type ParameterKey = 'Current_Score' | 'Volatility' | 'Trend_Slope' | 'Inflation_Performance';
+
+interface ParameterConfig {
+  label: string;
+  shortLabel: string;
+  invert: boolean;
+  format: (value: number) => string;
+}
+
+const PARAMETER_CONFIG: Record<ParameterKey, ParameterConfig> = {
+  Current_Score: {
+    label: 'Brand Score',
+    shortLabel: 'Score',
+    invert: false,
+    format: (v) => v.toFixed(0),
+  },
+  Volatility: {
+    label: 'Stability (Inverted Volatility)',
+    shortLabel: 'Stability',
+    invert: true,
+    format: (v) => Math.abs(v).toFixed(1),
+  },
+  Trend_Slope: {
+    label: 'Momentum (Trend Slope)',
+    shortLabel: 'Momentum',
+    invert: false,
+    format: (v) => v.toFixed(2),
+  },
+  Inflation_Performance: {
+    label: 'Inflation Performance',
+    shortLabel: 'Inflation Perf.',
+    invert: false,
+    format: (v) => v.toFixed(1),
+  },
+};
+
+// Colors for the 4 quadrants based on position relative to medians
+const QUADRANT_COLORS = {
+  topRight: 'hsl(142, 76%, 36%)',    // Green - best in both
+  topLeft: 'hsl(25, 95%, 53%)',      // Orange - good Y, bad X
+  bottomRight: 'hsl(220, 14%, 46%)', // Grey - good X, bad Y
+  bottomLeft: 'hsl(0, 84%, 60%)',    // Red - bad in both
+};
+
+interface CustomExplorerChartProps {
+  brands: Brand[];
+  searchQuery: string;
+  selectedBrand: Brand | null;
+  onSelectBrand: (brand: Brand | null) => void;
+}
+
+interface ChartDataPoint {
+  brand: Brand;
+  x: number;
+  y: number;
+  z: number;
+  quadrantColor: string;
+}
+
+export function CustomExplorerChart({
+  brands,
+  searchQuery,
+  selectedBrand,
+  onSelectBrand,
+}: CustomExplorerChartProps) {
+  const [xParam, setXParam] = useState<ParameterKey>('Volatility');
+  const [yParam, setYParam] = useState<ParameterKey>('Inflation_Performance');
+
+  // Get available options for each axis (exclude the other's selection)
+  const xOptions = Object.keys(PARAMETER_CONFIG).filter(k => k !== yParam) as ParameterKey[];
+  const yOptions = Object.keys(PARAMETER_CONFIG).filter(k => k !== xParam) as ParameterKey[];
+
+  // Calculate medians for the selected parameters
+  const { medianX, medianY, scoreRange } = useMemo(() => {
+    const validBrands = brands.filter(b => {
+      const xVal = b[xParam];
+      const yVal = b[yParam];
+      return xVal !== null && yVal !== null;
+    });
+
+    const xValues = validBrands.map(b => {
+      const val = b[xParam] as number;
+      return PARAMETER_CONFIG[xParam].invert ? -val : val;
+    }).sort((a, b) => a - b);
+
+    const yValues = validBrands.map(b => {
+      const val = b[yParam] as number;
+      return PARAMETER_CONFIG[yParam].invert ? -val : val;
+    }).sort((a, b) => a - b);
+
+    const scores = brands.map(b => b.Current_Score);
+
+    return {
+      medianX: xValues.length > 0 ? xValues[Math.floor(xValues.length / 2)] : 0,
+      medianY: yValues.length > 0 ? yValues[Math.floor(yValues.length / 2)] : 0,
+      scoreRange: { min: Math.min(...scores), max: Math.max(...scores) },
+    };
+  }, [brands, xParam, yParam]);
+
+  const chartData = useMemo(() => {
+    return brands
+      .filter(b => {
+        const xVal = b[xParam];
+        const yVal = b[yParam];
+        return xVal !== null && yVal !== null;
+      })
+      .filter(b =>
+        searchQuery === '' ||
+        b.Brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        b.Country.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .map(brand => {
+        const rawX = brand[xParam] as number;
+        const rawY = brand[yParam] as number;
+        const x = PARAMETER_CONFIG[xParam].invert ? -rawX : rawX;
+        const y = PARAMETER_CONFIG[yParam].invert ? -rawY : rawY;
+
+        // Determine quadrant color based on position relative to medians
+        let quadrantColor: string;
+        if (x >= medianX && y >= medianY) {
+          quadrantColor = QUADRANT_COLORS.topRight;
+        } else if (x < medianX && y >= medianY) {
+          quadrantColor = QUADRANT_COLORS.topLeft;
+        } else if (x >= medianX && y < medianY) {
+          quadrantColor = QUADRANT_COLORS.bottomRight;
+        } else {
+          quadrantColor = QUADRANT_COLORS.bottomLeft;
+        }
+
+        return {
+          brand,
+          x,
+          y,
+          z: brand.Current_Score,
+          quadrantColor,
+        };
+      });
+  }, [brands, searchQuery, xParam, yParam, medianX, medianY]);
+
+  // Calculate domain
+  const { xDomain, yDomain } = useMemo(() => {
+    if (chartData.length === 0) {
+      return {
+        xDomain: [-50, 50] as [number, number],
+        yDomain: [-20, 40] as [number, number],
+      };
+    }
+
+    const xValues = chartData.map(d => d.x);
+    const yValues = chartData.map(d => d.y);
+
+    const xMin = Math.min(...xValues);
+    const xMax = Math.max(...xValues);
+    const yMin = Math.min(...yValues);
+    const yMax = Math.max(...yValues);
+
+    const xPadding = (xMax - xMin) * 0.1 || 5;
+    const yPadding = (yMax - yMin) * 0.1 || 5;
+
+    return {
+      xDomain: [xMin - xPadding, xMax + xPadding] as [number, number],
+      yDomain: [yMin - yPadding, yMax + yPadding] as [number, number],
+    };
+  }, [chartData]);
+
+  const handleClick = useCallback((data: any) => {
+    if (data && data.payload) {
+      onSelectBrand(data.payload.brand);
+    }
+  }, [onSelectBrand]);
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload as ChartDataPoint;
+      const { brand } = data;
+
+      return (
+        <div className="bg-card border border-border rounded-lg shadow-lg p-3 max-w-xs z-50">
+          <p className="font-semibold text-foreground">{brand.Brand}</p>
+          <p className="text-sm text-muted-foreground">{brand.Country}</p>
+          <div className="mt-2 space-y-1 text-sm">
+            <p>
+              <span className="text-muted-foreground">{PARAMETER_CONFIG[xParam].shortLabel}:</span>{' '}
+              <span className="font-medium">{PARAMETER_CONFIG[xParam].format(brand[xParam] as number)}</span>
+            </p>
+            <p>
+              <span className="text-muted-foreground">{PARAMETER_CONFIG[yParam].shortLabel}:</span>{' '}
+              <span className="font-medium">{PARAMETER_CONFIG[yParam].format(brand[yParam] as number)}</span>
+            </p>
+            <p>
+              <span className="text-muted-foreground">Score:</span>{' '}
+              <span className="font-medium">{brand.Current_Score.toFixed(1)}</span>
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const getXAxisLabel = () => {
+    const config = PARAMETER_CONFIG[xParam];
+    if (config.invert) {
+      return `← Low ${config.shortLabel}          High ${config.shortLabel} →`;
+    }
+    return `← Low ${config.shortLabel}          High ${config.shortLabel} →`;
+  };
+
+  const getYAxisLabel = () => {
+    return PARAMETER_CONFIG[yParam].label;
+  };
+
+  return (
+    <Card className="shadow-card">
+      <CardHeader className="pb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <SlidersHorizontal className="h-5 w-5 text-primary" />
+            Custom Parameter Explorer
+          </CardTitle>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">X-Axis:</span>
+              <Select value={xParam} onValueChange={(v) => setXParam(v as ParameterKey)}>
+                <SelectTrigger className="w-[160px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {xOptions.map(key => (
+                    <SelectItem key={key} value={key}>
+                      {PARAMETER_CONFIG[key].shortLabel}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Y-Axis:</span>
+              <Select value={yParam} onValueChange={(v) => setYParam(v as ParameterKey)}>
+                <SelectTrigger className="w-[160px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {yOptions.map(key => (
+                    <SelectItem key={key} value={key}>
+                      {PARAMETER_CONFIG[key].shortLabel}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[500px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart
+              margin={{ top: 40, right: 40, bottom: 60, left: 60 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--chart-grid))"
+                opacity={0.5}
+              />
+
+              <XAxis
+                type="number"
+                dataKey="x"
+                domain={xDomain}
+                tickFormatter={(value) => PARAMETER_CONFIG[xParam].format(value)}
+                stroke="hsl(var(--chart-axis))"
+                fontSize={12}
+                tickLine={false}
+              >
+                <Label
+                  value={getXAxisLabel()}
+                  position="bottom"
+                  offset={35}
+                  style={{
+                    textAnchor: 'middle',
+                    fill: 'hsl(var(--foreground))',
+                    fontSize: 12,
+                    fontWeight: 500,
+                  }}
+                />
+              </XAxis>
+
+              <YAxis
+                type="number"
+                dataKey="y"
+                domain={yDomain}
+                stroke="hsl(var(--chart-axis))"
+                fontSize={12}
+                tickLine={false}
+                tickFormatter={(value) => PARAMETER_CONFIG[yParam].format(value)}
+              >
+                <Label
+                  value={getYAxisLabel()}
+                  angle={-90}
+                  position="insideLeft"
+                  offset={-45}
+                  style={{
+                    textAnchor: 'middle',
+                    fill: 'hsl(var(--foreground))',
+                    fontSize: 12,
+                    fontWeight: 500,
+                  }}
+                />
+              </YAxis>
+
+              <ZAxis
+                type="number"
+                dataKey="z"
+                domain={[scoreRange.min, scoreRange.max]}
+                range={[40, 400]}
+              />
+
+              {/* Quadrant dividers at medians */}
+              <ReferenceLine
+                x={medianX}
+                stroke="hsl(var(--border))"
+                strokeWidth={2}
+                strokeDasharray="4 4"
+              />
+              <ReferenceLine
+                y={medianY}
+                stroke="hsl(var(--border))"
+                strokeWidth={2}
+                strokeDasharray="4 4"
+              />
+
+              <Tooltip content={<CustomTooltip />} />
+
+              <Scatter
+                data={chartData}
+                onClick={handleClick}
+                cursor="pointer"
+              >
+                {chartData.map((entry, index) => {
+                  const isSelected = selectedBrand?.Brand === entry.brand.Brand;
+                  return (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.quadrantColor}
+                      fillOpacity={isSelected ? 1 : 0.7}
+                      stroke={isSelected ? 'hsl(var(--foreground))' : 'none'}
+                      strokeWidth={isSelected ? 3 : 0}
+                    />
+                  );
+                })}
+              </Scatter>
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Size Legend */}
+        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <span>Size = Brand Score:</span>
+          <div className="flex items-center gap-3 ml-2">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-foreground/40" />
+              <span>{scoreRange.min.toFixed(0)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-full bg-foreground/50" />
+              <span>{((scoreRange.min + scoreRange.max) / 2).toFixed(0)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 rounded-full bg-foreground/60" />
+              <span>{scoreRange.max.toFixed(0)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quadrant Legend */}
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.topRight}15` }}>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.topRight }} />
+            <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.topRight }}>High X, High Y</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.topLeft}15` }}>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.topLeft }} />
+            <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.topLeft }}>Low X, High Y</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.bottomRight}15` }}>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.bottomRight }} />
+            <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.bottomRight }}>High X, Low Y</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.bottomLeft}15` }}>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.bottomLeft }} />
+            <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.bottomLeft }}>Low X, Low Y</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

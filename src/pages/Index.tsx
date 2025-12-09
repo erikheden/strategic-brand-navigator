@@ -5,6 +5,7 @@ import { BrandSearch } from '@/components/dashboard/BrandSearch';
 import { BrandFilters } from '@/components/dashboard/BrandFilters';
 import { BrandRadarChart } from '@/components/dashboard/BrandRadarChart';
 import { BrandMomentumChart } from '@/components/dashboard/BrandMomentumChart';
+import { CustomExplorerChart } from '@/components/dashboard/CustomExplorerChart';
 import { StrategicInsight } from '@/components/dashboard/StrategicInsight';
 import { BrandTable } from '@/components/dashboard/BrandTable';
 import { Brand } from '@/types/brand';
@@ -78,6 +79,12 @@ const Index = () => {
             medianInflation={stats.medianInflation}
           />
           <BrandMomentumChart
+            brands={filteredBrands}
+            searchQuery={searchQuery}
+            selectedBrand={selectedBrand}
+            onSelectBrand={setSelectedBrand}
+          />
+          <CustomExplorerChart
             brands={filteredBrands}
             searchQuery={searchQuery}
             selectedBrand={selectedBrand}
