@@ -9,8 +9,9 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Brand, getQuadrant, QUADRANT_CONFIG, QuadrantType } from '@/types/brand';
-import { ArrowUpDown, ArrowUp, ArrowDown, TableIcon } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, TableIcon, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface BrandTableProps {
   brands: Brand[];
@@ -145,37 +146,73 @@ export function BrandTable({
                     </Button>
                   </TableHead>
                   <TableHead className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 gap-1 -mr-3 font-medium"
-                      onClick={() => handleSort('Current_Score')}
-                    >
-                      Score
-                      <SortIcon columnKey="Current_Score" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 -mr-1 font-medium"
+                        onClick={() => handleSort('Current_Score')}
+                      >
+                        Score
+                        <SortIcon columnKey="Current_Score" />
+                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[200px]">
+                            <p className="text-xs">The brand's official Sustainable Brand Index Score</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                   </TableHead>
                   <TableHead className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 gap-1 -mr-3 font-medium"
-                      onClick={() => handleSort('Volatility')}
-                    >
-                      Volatility
-                      <SortIcon columnKey="Volatility" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 -mr-1 font-medium"
+                        onClick={() => handleSort('Volatility')}
+                      >
+                        Volatility
+                        <SortIcon columnKey="Volatility" />
+                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[200px]">
+                            <p className="text-xs">Measures how much the brand's score fluctuates over time. Lower volatility indicates more stable performance.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                   </TableHead>
                   <TableHead className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 gap-1 -mr-3 font-medium"
-                      onClick={() => handleSort('Inflation_Performance')}
-                    >
-                      Inflation Perf.
-                      <SortIcon columnKey="Inflation_Performance" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 -mr-1 font-medium"
+                        onClick={() => handleSort('Inflation_Performance')}
+                      >
+                        Inflation Perf.
+                        <SortIcon columnKey="Inflation_Performance" />
+                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[220px]">
+                            <p className="text-xs">Measures brand performance relative to market conditions. Positive values indicate outperformance, negative values suggest underperformance.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                   </TableHead>
                   <TableHead>
                     <Button
