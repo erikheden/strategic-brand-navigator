@@ -4,6 +4,7 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { BrandSearch } from '@/components/dashboard/BrandSearch';
 import { BrandFilters } from '@/components/dashboard/BrandFilters';
 import { BrandRadarChart } from '@/components/dashboard/BrandRadarChart';
+import { BrandMomentumChart } from '@/components/dashboard/BrandMomentumChart';
 import { StrategicInsight } from '@/components/dashboard/StrategicInsight';
 import { BrandTable } from '@/components/dashboard/BrandTable';
 import { Brand } from '@/types/brand';
@@ -66,15 +67,23 @@ const Index = () => {
           />
         </div>
 
-        {/* Chart */}
-        <BrandRadarChart
-          brands={filteredBrands}
-          searchQuery={searchQuery}
-          selectedBrand={selectedBrand}
-          onSelectBrand={setSelectedBrand}
-          medianVolatility={stats.medianVolatility}
-          medianInflation={stats.medianInflation}
-        />
+        {/* Charts */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <BrandRadarChart
+            brands={filteredBrands}
+            searchQuery={searchQuery}
+            selectedBrand={selectedBrand}
+            onSelectBrand={setSelectedBrand}
+            medianVolatility={stats.medianVolatility}
+            medianInflation={stats.medianInflation}
+          />
+          <BrandMomentumChart
+            brands={filteredBrands}
+            searchQuery={searchQuery}
+            selectedBrand={selectedBrand}
+            onSelectBrand={setSelectedBrand}
+          />
+        </div>
 
         {/* Strategic Insight */}
         <StrategicInsight
