@@ -222,7 +222,7 @@ export function BrandRadarChart({
                 fontSize={12}
                 tickLine={false}
                 allowDataOverflow
-                tickFormatter={(value) => value.toFixed(2)}
+                tickFormatter={(value) => value.toFixed(0)}
               >
                 <Label
                   value="Growth Velocity"
