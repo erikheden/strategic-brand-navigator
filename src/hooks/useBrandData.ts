@@ -10,7 +10,7 @@ export function useBrandData() {
   useEffect(() => {
     async function loadData() {
       try {
-        const response = await fetch('/src/data/brand-data.csv');
+        const response = await fetch('/data/brand-data.csv');
         const csvText = await response.text();
         
         Papa.parse<Brand>(csvText, {
