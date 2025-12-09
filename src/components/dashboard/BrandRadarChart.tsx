@@ -300,6 +300,25 @@ export function BrandRadarChart({
           </ResponsiveContainer>
         </div>
 
+        {/* Size Legend */}
+        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <span>Size = Brand Score:</span>
+          <div className="flex items-center gap-3 ml-2">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-foreground/40" />
+              <span>{scoreRange.min.toFixed(0)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-full bg-foreground/50" />
+              <span>{((scoreRange.min + scoreRange.max) / 2).toFixed(0)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 rounded-full bg-foreground/60" />
+              <span>{scoreRange.max.toFixed(0)}</span>
+            </div>
+          </div>
+        </div>
+
         {/* Quadrant Legend with Zoom */}
         <TooltipProvider>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
