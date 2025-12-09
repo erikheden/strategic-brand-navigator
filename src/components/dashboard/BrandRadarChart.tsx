@@ -35,6 +35,7 @@ interface ChartDataPoint {
   brand: Brand;
   x: number; // Inverted volatility (stability)
   y: number;
+  z: number; // Size based on Current_Score
   quadrant: QuadrantType;
 }
 
@@ -74,7 +75,17 @@ export function BrandRadarChart({
 }: BrandRadarChartProps) {
   const [zoomedQuadrant, setZoomedQuadrant] = useState<QuadrantType | null>(null);
 
+  // Calculate min/max scores for size scaling
+  const scoreRange = useMemo(() => {
+    const scores = brands.map(b => b.Current_Score);
+    return { min: Math.min(...scores), max: Math.max(...scores) };
+  }, [brands]);
+
   const chartData = useMemo(() => {
+    const { min, max } = scoreRange;
+    const sizeMin = 4;
+    const sizeMax = 14;
+    
     return brands
       .filter(b => b.Inflation_Performance !== null)
       .filter(b => 
@@ -82,13 +93,20 @@ export function BrandRadarChart({
         b.Brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
         b.Country.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      .map(brand => ({
-        brand,
-        x: -brand.Volatility, // Invert for stability axis
-        y: brand.Inflation_Performance as number,
-        quadrant: getQuadrant(brand.Volatility, brand.Inflation_Performance, medianVolatility, medianInflation),
-      }));
-  }, [brands, searchQuery, medianVolatility, medianInflation]);
+      .map(brand => {
+        // Normalize score to size range
+        const normalizedScore = max > min ? (brand.Current_Score - min) / (max - min) : 0.5;
+        const size = sizeMin + normalizedScore * (sizeMax - sizeMin);
+        
+        return {
+          brand,
+          x: -brand.Volatility, // Invert for stability axis
+          y: brand.Inflation_Performance as number,
+          z: size,
+          quadrant: getQuadrant(brand.Volatility, brand.Inflation_Performance, medianVolatility, medianInflation),
+        };
+      });
+  }, [brands, searchQuery, medianVolatility, medianInflation, scoreRange]);
 
   // Calculate full domain bounds
   const fullDomain = useMemo(() => {
@@ -268,6 +286,7 @@ export function BrandRadarChart({
                 {chartData.map((entry, index) => {
                   const isSelected = selectedBrand?.Brand === entry.brand.Brand;
                   const isInZoomedQuadrant = !zoomedQuadrant || entry.quadrant === zoomedQuadrant;
+                  const baseSize = entry.z;
                   return (
                     <Cell
                       key={`cell-${index}`}
@@ -275,7 +294,7 @@ export function BrandRadarChart({
                       fillOpacity={isInZoomedQuadrant ? (isSelected ? 1 : 0.7) : 0.2}
                       stroke={isSelected ? 'hsl(var(--foreground))' : 'none'}
                       strokeWidth={isSelected ? 2 : 0}
-                      r={isSelected ? 8 : 5}
+                      r={isSelected ? baseSize + 3 : baseSize}
                     />
                   );
                 })}
