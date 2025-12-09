@@ -97,8 +97,8 @@ export function StrategicInsight({
                   <TooltipTrigger asChild>
                     <HelpCircle className="h-3 w-3 cursor-help" />
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-[200px]">
-                    <p className="text-xs">Indicates how well the brand maintains or grows value during inflationary periods. Higher values suggest stronger pricing power.</p>
+                  <TooltipContent className="max-w-[220px]">
+                    <p className="text-xs">Measures brand performance relative to market conditions. Positive values indicate outperformance, negative values suggest underperformance.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
