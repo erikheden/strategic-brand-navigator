@@ -4,6 +4,7 @@ import {
   Scatter,
   XAxis,
   YAxis,
+  ZAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
@@ -82,10 +83,6 @@ export function BrandRadarChart({
   }, [brands]);
 
   const chartData = useMemo(() => {
-    const { min, max } = scoreRange;
-    const sizeMin = 4;
-    const sizeMax = 14;
-    
     return brands
       .filter(b => b.Inflation_Performance !== null)
       .filter(b => 
@@ -93,20 +90,14 @@ export function BrandRadarChart({
         b.Brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
         b.Country.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      .map(brand => {
-        // Normalize score to size range
-        const normalizedScore = max > min ? (brand.Current_Score - min) / (max - min) : 0.5;
-        const size = sizeMin + normalizedScore * (sizeMax - sizeMin);
-        
-        return {
-          brand,
-          x: -brand.Volatility, // Invert for stability axis
-          y: brand.Inflation_Performance as number,
-          z: size,
-          quadrant: getQuadrant(brand.Volatility, brand.Inflation_Performance, medianVolatility, medianInflation),
-        };
-      });
-  }, [brands, searchQuery, medianVolatility, medianInflation, scoreRange]);
+      .map(brand => ({
+        brand,
+        x: -brand.Volatility, // Invert for stability axis
+        y: brand.Inflation_Performance as number,
+        z: brand.Current_Score, // Use raw score for ZAxis sizing
+        quadrant: getQuadrant(brand.Volatility, brand.Inflation_Performance, medianVolatility, medianInflation),
+      }));
+  }, [brands, searchQuery, medianVolatility, medianInflation]);
 
   // Calculate full domain bounds
   const fullDomain = useMemo(() => {
@@ -262,6 +253,14 @@ export function BrandRadarChart({
                 />
               </YAxis>
 
+              {/* Z Axis for point sizing based on Current_Score */}
+              <ZAxis 
+                type="number" 
+                dataKey="z" 
+                domain={[scoreRange.min, scoreRange.max]} 
+                range={[40, 400]} 
+              />
+
               {/* Quadrant dividers */}
               <ReferenceLine 
                 x={-medianVolatility} 
@@ -286,15 +285,13 @@ export function BrandRadarChart({
                 {chartData.map((entry, index) => {
                   const isSelected = selectedBrand?.Brand === entry.brand.Brand;
                   const isInZoomedQuadrant = !zoomedQuadrant || entry.quadrant === zoomedQuadrant;
-                  const baseSize = entry.z;
                   return (
                     <Cell
                       key={`cell-${index}`}
                       fill={getPointColor(entry.quadrant)}
                       fillOpacity={isInZoomedQuadrant ? (isSelected ? 1 : 0.7) : 0.2}
                       stroke={isSelected ? 'hsl(var(--foreground))' : 'none'}
-                      strokeWidth={isSelected ? 2 : 0}
-                      r={isSelected ? baseSize + 3 : baseSize}
+                      strokeWidth={isSelected ? 3 : 0}
                     />
                   );
                 })}
