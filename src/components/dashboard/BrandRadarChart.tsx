@@ -225,7 +225,7 @@ export function BrandRadarChart({
                 tickFormatter={(value) => value.toFixed(0)}
               >
                 <Label
-                  value="Growth Velocity"
+                  value="Inflation Performance"
                   angle={-90}
                   position="insideLeft"
                   offset={-45}
