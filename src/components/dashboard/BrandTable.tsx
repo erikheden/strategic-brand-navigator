@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -9,7 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Brand, getQuadrant, QUADRANT_CONFIG, QuadrantType } from '@/types/brand';
-import { ArrowUpDown, ArrowUp, ArrowDown, TableIcon, HelpCircle } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, TableIcon, HelpCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -245,7 +246,16 @@ export function BrandTable({
                       }`}
                       onClick={() => onSelectBrand(brand)}
                     >
-                      <TableCell className="font-medium">{brand.Brand}</TableCell>
+                      <TableCell className="font-medium">
+                        <Link 
+                          to={`/brand/${encodeURIComponent(brand.Brand)}/${encodeURIComponent(brand.Country)}`}
+                          className="flex items-center gap-1 hover:text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {brand.Brand}
+                          <ExternalLink className="h-3 w-3 opacity-50" />
+                        </Link>
+                      </TableCell>
                       <TableCell>{brand.Country}</TableCell>
                       <TableCell className="text-muted-foreground">{brand.Industry}</TableCell>
                       <TableCell className="text-right font-mono">{brand.Current_Score.toFixed(1)}</TableCell>
