@@ -6,7 +6,7 @@ export interface Brand {
   Volatility: number;
   Trend_Slope: number;
   Inflation_Performance: number | null;
-  Cluster_Name: string;
+  Cluster_Name?: string;
 }
 
 export type QuadrantType = 'fortress' | 'challenger' | 'sleeper' | 'danger';

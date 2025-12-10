@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import Papa from 'papaparse';
+import { supabase } from '@/integrations/supabase/client';
 import { Brand } from '@/types/brand';
 
 export function useBrandData() {
@@ -10,35 +10,32 @@ export function useBrandData() {
   useEffect(() => {
     async function loadData() {
       try {
-        const response = await fetch('/data/brand-data.csv');
-        const csvText = await response.text();
-        
-        Papa.parse<Brand>(csvText, {
-          header: true,
-          dynamicTyping: true,
-          skipEmptyLines: true,
-          complete: (results) => {
-            const validBrands = results.data
-              .filter(brand => brand.Brand && brand.Volatility !== null)
-              .map(brand => ({
-                ...brand,
-                Current_Score: Number(brand.Current_Score) || 0,
-                Volatility: Number(brand.Volatility) || 0,
-                Trend_Slope: Number(brand.Trend_Slope) || 0,
-                Inflation_Performance: brand.Inflation_Performance !== null && String(brand.Inflation_Performance) !== '' 
-                  ? Number(brand.Inflation_Performance) 
-                  : null,
-              }));
-            setBrands(validBrands);
-            setLoading(false);
-          },
-          error: (err) => {
-            setError(err.message);
-            setLoading(false);
-          },
-        });
+        const { data, error: queryError } = await supabase
+          .from('SBI_Inflation_Stability_2025')
+          .select('*');
+
+        if (queryError) {
+          throw queryError;
+        }
+
+        const validBrands: Brand[] = (data || [])
+          .filter(row => row.Brand && row.Volatility !== null)
+          .map(row => ({
+            Brand: row.Brand || '',
+            Country: row.Country || '',
+            Industry: row.Industry || '',
+            Current_Score: Number(row.Current_Score) || 0,
+            Volatility: Number(row.Volatility) || 0,
+            Trend_Slope: Number(row.Trend_Slope) || 0,
+            Inflation_Performance: row.Inflation_Performance !== null && row.Inflation_Performance !== ''
+              ? Number(row.Inflation_Performance)
+              : null,
+          }));
+
+        setBrands(validBrands);
+        setLoading(false);
       } catch (err) {
-        setError('Failed to load brand data');
+        setError(err instanceof Error ? err.message : 'Failed to load brand data');
         setLoading(false);
       }
     }
