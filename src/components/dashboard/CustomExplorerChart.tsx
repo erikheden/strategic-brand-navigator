@@ -16,7 +16,8 @@ import {
 import { Brand } from '@/types/brand';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { SlidersHorizontal, Tag } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { SlidersHorizontal, Tag, Sparkles } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -61,6 +62,45 @@ const PARAMETER_CONFIG: Record<ParameterKey, ParameterConfig> = {
   },
 };
 
+interface PresetStory {
+  id: string;
+  name: string;
+  description: string;
+  xParam: ParameterKey;
+  yParam: ParameterKey;
+}
+
+const PRESET_STORIES: PresetStory[] = [
+  {
+    id: 'inflation-survivors',
+    name: 'Inflation Survivors',
+    description: 'Brands that maintained performance during inflation',
+    xParam: 'Volatility',
+    yParam: 'Inflation_Performance',
+  },
+  {
+    id: 'growth-at-what-cost',
+    name: 'Growth at What Cost?',
+    description: 'High momentum brands vs. their stability',
+    xParam: 'Volatility',
+    yParam: 'Trend_Slope',
+  },
+  {
+    id: 'steady-climbers',
+    name: 'Steady Climbers',
+    description: 'Strong brands with positive momentum',
+    xParam: 'Current_Score',
+    yParam: 'Trend_Slope',
+  },
+  {
+    id: 'resilience-test',
+    name: 'Resilience Test',
+    description: 'Brand strength vs. inflation resilience',
+    xParam: 'Current_Score',
+    yParam: 'Inflation_Performance',
+  },
+];
+
 // Colors for the 4 quadrants based on position relative to medians
 const QUADRANT_COLORS = {
   topRight: 'hsl(142, 76%, 36%)',    // Green - best in both
@@ -93,6 +133,24 @@ export function CustomExplorerChart({
   const [xParam, setXParam] = useState<ParameterKey>('Volatility');
   const [yParam, setYParam] = useState<ParameterKey>('Inflation_Performance');
   const [showLabels, setShowLabels] = useState(false);
+  const [activePreset, setActivePreset] = useState<string | null>('inflation-survivors');
+
+  const handlePresetClick = useCallback((preset: PresetStory) => {
+    setXParam(preset.xParam);
+    setYParam(preset.yParam);
+    setActivePreset(preset.id);
+  }, []);
+
+  // Clear active preset when manually changing axes
+  const handleXParamChange = useCallback((value: ParameterKey) => {
+    setXParam(value);
+    setActivePreset(null);
+  }, []);
+
+  const handleYParamChange = useCallback((value: ParameterKey) => {
+    setYParam(value);
+    setActivePreset(null);
+  }, []);
 
   // Get available options for each axis (exclude the other's selection)
   const xOptions = Object.keys(PARAMETER_CONFIG).filter(k => k !== yParam) as ParameterKey[];
@@ -241,47 +299,67 @@ export function CustomExplorerChart({
   return (
     <Card className="shadow-card">
       <CardHeader className="pb-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <SlidersHorizontal className="h-5 w-5 text-primary" />
-            Custom Parameter Explorer
-          </CardTitle>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Labels</span>
-              <Switch checked={showLabels} onCheckedChange={setShowLabels} />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <SlidersHorizontal className="h-5 w-5 text-primary" />
+              Custom Parameter Explorer
+            </CardTitle>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Labels</span>
+                <Switch checked={showLabels} onCheckedChange={setShowLabels} />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">X-Axis:</span>
+                <Select value={xParam} onValueChange={(v) => handleXParamChange(v as ParameterKey)}>
+                  <SelectTrigger className="w-[160px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {xOptions.map(key => (
+                      <SelectItem key={key} value={key}>
+                        {PARAMETER_CONFIG[key].shortLabel}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Y-Axis:</span>
+                <Select value={yParam} onValueChange={(v) => handleYParamChange(v as ParameterKey)}>
+                  <SelectTrigger className="w-[160px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yOptions.map(key => (
+                      <SelectItem key={key} value={key}>
+                        {PARAMETER_CONFIG[key].shortLabel}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">X-Axis:</span>
-              <Select value={xParam} onValueChange={(v) => setXParam(v as ParameterKey)}>
-                <SelectTrigger className="w-[160px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {xOptions.map(key => (
-                    <SelectItem key={key} value={key}>
-                      {PARAMETER_CONFIG[key].shortLabel}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Y-Axis:</span>
-              <Select value={yParam} onValueChange={(v) => setYParam(v as ParameterKey)}>
-                <SelectTrigger className="w-[160px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {yOptions.map(key => (
-                    <SelectItem key={key} value={key}>
-                      {PARAMETER_CONFIG[key].shortLabel}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          </div>
+          
+          {/* Preset Story Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-muted-foreground mr-1">Quick views:</span>
+            {PRESET_STORIES.map((preset) => (
+              <Button
+                key={preset.id}
+                variant={activePreset === preset.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePresetClick(preset)}
+                className="h-7 text-xs"
+                title={preset.description}
+              >
+                {preset.name}
+              </Button>
+            ))}
           </div>
         </div>
       </CardHeader>
