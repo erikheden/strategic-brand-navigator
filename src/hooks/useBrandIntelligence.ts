@@ -22,10 +22,70 @@ export interface CompetitorRanking {
   industry: string;
 }
 
+export interface DiscussionTopic {
+  discussion_topic: string;
+  percentage: number;
+  year: number;
+}
+
+export interface KnowledgeItem {
+  term: string;
+  percentage: number;
+  year: number;
+}
+
+export interface PurchasingItem {
+  category: string;
+  impact_level: string;
+  percentage: number;
+  year: number;
+}
+
+export interface InfluenceItem {
+  medium: string;
+  percentage: number;
+  year: number;
+}
+
+export interface AgeScoreItem {
+  age: string;
+  score: number;
+  social: number;
+  environment: number;
+  year: number;
+}
+
+export interface PriorityItem {
+  age: string;
+  english_label_short: string;
+  percentage: number;
+  year: number;
+}
+
+export interface MaterialityItem {
+  materiality_area: string;
+  percentage: number;
+  year: number;
+}
+
+export interface BehaviourItem {
+  behaviour_group: string;
+  percentage: number;
+  year: number;
+}
+
 export interface BrandIntelligence {
   historicalScores: HistoricalScore[];
   awarenessAttitude: AwarenessAttitude[];
   competitors: CompetitorRanking[];
+  discussionTopics: DiscussionTopic[];
+  knowledgeLevels: KnowledgeItem[];
+  purchasingImpact: PurchasingItem[];
+  influenceChannels: InfluenceItem[];
+  ageGroupScores: AgeScoreItem[];
+  prioritiesByAge: PriorityItem[];
+  materialityAreas: MaterialityItem[];
+  behaviourGroups: BehaviourItem[];
   currentData: {
     score: number;
     volatility: number;
@@ -72,6 +132,14 @@ export function useBrandIntelligence(brandName: string, country: string) {
     historicalScores: [],
     awarenessAttitude: [],
     competitors: [],
+    discussionTopics: [],
+    knowledgeLevels: [],
+    purchasingImpact: [],
+    influenceChannels: [],
+    ageGroupScores: [],
+    prioritiesByAge: [],
+    materialityAreas: [],
+    behaviourGroups: [],
     currentData: null,
   });
   const [loading, setLoading] = useState(true);
@@ -93,7 +161,7 @@ export function useBrandIntelligence(brandName: string, country: string) {
 
       try {
         // Fetch all data in parallel
-        const [historicalRes, awarenessRes, currentRes] = await Promise.all([
+        const [historicalRes, awarenessRes, currentRes, discussionRes, knowledgeRes, purchasingRes, influenceRes] = await Promise.all([
           // Historical scores 2011-2025 (uses full country names like "Finland")
           supabase
             .from('SBI Ranking Scores 2011-2025')
@@ -117,6 +185,34 @@ export function useBrandIntelligence(brandName: string, country: string) {
             .eq('Brand', brandName)
             .eq('Country', countryCode)
             .single(),
+
+          // Discussion topics (country-level data)
+          supabase
+            .from('SBI_Discussion_Topics')
+            .select('discussion_topic, percentage, year')
+            .eq('country', countryCode)
+            .order('year', { ascending: false }),
+
+          // Knowledge levels (country-level data)
+          supabase
+            .from('SBI_Knowledge')
+            .select('term, percentage, year')
+            .eq('country', countryCode)
+            .order('year', { ascending: false }),
+
+          // Purchasing decision impact (country-level data)
+          supabase
+            .from('SBI_purchasing_decision_industries')
+            .select('category, impact_level, percentage, year')
+            .eq('country', countryCode)
+            .order('year', { ascending: false }),
+
+          // Influence channels (country-level data)
+          supabase
+            .from('SBI_influences')
+            .select('medium, percentage, year')
+            .eq('country', countryCode)
+            .order('year', { ascending: false }),
         ]);
 
         // Get industry from current data for competitor lookup
@@ -171,10 +267,44 @@ export function useBrandIntelligence(brandName: string, country: string) {
             }
           : null;
 
+        // Process consumer context data
+        const discussionTopics: DiscussionTopic[] = (discussionRes.data || []).map((row) => ({
+          discussion_topic: row.discussion_topic || '',
+          percentage: row.percentage || 0,
+          year: row.year || 0,
+        }));
+
+        const knowledgeLevels: KnowledgeItem[] = (knowledgeRes.data || []).map((row) => ({
+          term: row.term || '',
+          percentage: row.percentage || 0,
+          year: row.year || 0,
+        }));
+
+        const purchasingImpact: PurchasingItem[] = (purchasingRes.data || []).map((row) => ({
+          category: row.category || '',
+          impact_level: row.impact_level || '',
+          percentage: row.percentage || 0,
+          year: row.year || 0,
+        }));
+
+        const influenceChannels: InfluenceItem[] = (influenceRes.data || []).map((row) => ({
+          medium: row.medium || '',
+          percentage: row.percentage || 0,
+          year: row.year || 0,
+        }));
+
         setData({
           historicalScores,
           awarenessAttitude,
           competitors: competitorsData,
+          discussionTopics,
+          knowledgeLevels,
+          purchasingImpact,
+          influenceChannels,
+          ageGroupScores: [],
+          prioritiesByAge: [],
+          materialityAreas: [],
+          behaviourGroups: [],
           currentData,
         });
       } catch (err) {
