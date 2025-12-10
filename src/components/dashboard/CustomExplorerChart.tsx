@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ChartFilters } from './ChartFilters';
 
 type ParameterKey = 'Current_Score' | 'Volatility' | 'Trend_Slope' | 'Inflation_Performance';
 
@@ -134,6 +135,20 @@ export function CustomExplorerChart({
   const [yParam, setYParam] = useState<ParameterKey>('Inflation_Performance');
   const [showLabels, setShowLabels] = useState(false);
   const [activePreset, setActivePreset] = useState<string | null>('inflation-survivors');
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+
+  // Filter brands by country/industry
+  const filteredBrands = useMemo(() => {
+    let result = brands;
+    if (selectedCountry) {
+      result = result.filter(b => b.Country === selectedCountry);
+    }
+    if (selectedIndustry) {
+      result = result.filter(b => b.Industry === selectedIndustry);
+    }
+    return result;
+  }, [brands, selectedCountry, selectedIndustry]);
 
   const handlePresetClick = useCallback((preset: PresetStory) => {
     setXParam(preset.xParam);
@@ -158,7 +173,7 @@ export function CustomExplorerChart({
 
   // Calculate medians for the selected parameters
   const { medianX, medianY, scoreRange } = useMemo(() => {
-    const validBrands = brands.filter(b => {
+    const validBrands = filteredBrands.filter(b => {
       const xVal = b[xParam];
       const yVal = b[yParam];
       return xVal !== null && yVal !== null;
@@ -174,17 +189,17 @@ export function CustomExplorerChart({
       return PARAMETER_CONFIG[yParam].invert ? -val : val;
     }).sort((a, b) => a - b);
 
-    const scores = brands.map(b => b.Current_Score);
+    const scores = filteredBrands.map(b => b.Current_Score);
 
     return {
       medianX: xValues.length > 0 ? xValues[Math.floor(xValues.length / 2)] : 0,
       medianY: yValues.length > 0 ? yValues[Math.floor(yValues.length / 2)] : 0,
       scoreRange: { min: Math.min(...scores), max: Math.max(...scores) },
     };
-  }, [brands, xParam, yParam]);
+  }, [filteredBrands, xParam, yParam]);
 
   const chartData = useMemo(() => {
-    return brands
+    return filteredBrands
       .filter(b => {
         const xVal = b[xParam];
         const yVal = b[yParam];
@@ -221,7 +236,7 @@ export function CustomExplorerChart({
           quadrantColor,
         };
       });
-  }, [brands, searchQuery, xParam, yParam, medianX, medianY]);
+  }, [filteredBrands, searchQuery, xParam, yParam, medianX, medianY]);
 
   // Calculate domain
   const { xDomain, yDomain } = useMemo(() => {
@@ -306,6 +321,13 @@ export function CustomExplorerChart({
               Custom Parameter Explorer
             </CardTitle>
             <div className="flex flex-wrap items-center gap-3">
+              <ChartFilters
+                brands={brands}
+                selectedCountry={selectedCountry}
+                selectedIndustry={selectedIndustry}
+                onCountryChange={setSelectedCountry}
+                onIndustryChange={setSelectedIndustry}
+              />
               <div className="flex items-center gap-2">
                 <Tag className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Labels</span>

@@ -24,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ChartFilters } from './ChartFilters';
 
 interface BrandRadarChartProps {
   brands: Brand[];
@@ -78,15 +79,29 @@ export function BrandRadarChart({
 }: BrandRadarChartProps) {
   const [zoomedQuadrant, setZoomedQuadrant] = useState<QuadrantType | null>(null);
   const [showLabels, setShowLabels] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+
+  // Filter brands by country/industry
+  const filteredBrands = useMemo(() => {
+    let result = brands;
+    if (selectedCountry) {
+      result = result.filter(b => b.Country === selectedCountry);
+    }
+    if (selectedIndustry) {
+      result = result.filter(b => b.Industry === selectedIndustry);
+    }
+    return result;
+  }, [brands, selectedCountry, selectedIndustry]);
 
   // Calculate min/max scores for size scaling
   const scoreRange = useMemo(() => {
-    const scores = brands.map(b => b.Current_Score);
+    const scores = filteredBrands.map(b => b.Current_Score);
     return { min: Math.min(...scores), max: Math.max(...scores) };
-  }, [brands]);
+  }, [filteredBrands]);
 
   const chartData = useMemo(() => {
-    return brands
+    return filteredBrands
       .filter(b => b.Inflation_Performance !== null)
       .filter(b => 
         searchQuery === '' || 
@@ -100,7 +115,7 @@ export function BrandRadarChart({
         z: brand.Current_Score, // Use raw score for ZAxis sizing
         quadrant: getQuadrant(brand.Volatility, brand.Inflation_Performance, medianVolatility, medianInflation),
       }));
-  }, [brands, searchQuery, medianVolatility, medianInflation]);
+  }, [filteredBrands, searchQuery, medianVolatility, medianInflation]);
 
   // Calculate full domain bounds
   const fullDomain = useMemo(() => {
@@ -177,28 +192,37 @@ export function BrandRadarChart({
   return (
     <Card className="shadow-card">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <Radar className="h-5 w-5 text-primary" />
-            SBI Strategic Brand Radar
-          </CardTitle>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Labels</span>
-              <Switch checked={showLabels} onCheckedChange={setShowLabels} />
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <Radar className="h-5 w-5 text-primary" />
+              SBI Strategic Brand Radar
+            </CardTitle>
+            <div className="flex items-center gap-3">
+              <ChartFilters
+                brands={brands}
+                selectedCountry={selectedCountry}
+                selectedIndustry={selectedIndustry}
+                onCountryChange={setSelectedCountry}
+                onIndustryChange={setSelectedIndustry}
+              />
+              <div className="flex items-center gap-2">
+                <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Labels</span>
+                <Switch checked={showLabels} onCheckedChange={setShowLabels} />
+              </div>
+              {zoomedQuadrant && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetZoom}
+                  className="gap-1.5"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Reset Zoom
+                </Button>
+              )}
             </div>
-            {zoomedQuadrant && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetZoom}
-                className="gap-1.5"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Reset Zoom
-              </Button>
-            )}
           </div>
         </div>
       </CardHeader>

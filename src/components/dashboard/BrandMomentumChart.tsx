@@ -17,6 +17,7 @@ import { Brand } from '@/types/brand';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { TrendingUp, Tag } from 'lucide-react';
+import { ChartFilters } from './ChartFilters';
 
 interface BrandMomentumChartProps {
   brands: Brand[];
@@ -109,25 +110,39 @@ export function BrandMomentumChart({
   onSelectBrand,
 }: BrandMomentumChartProps) {
   const [showLabels, setShowLabels] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+
+  // Filter brands by country/industry
+  const filteredBrands = useMemo(() => {
+    let result = brands;
+    if (selectedCountry) {
+      result = result.filter(b => b.Country === selectedCountry);
+    }
+    if (selectedIndustry) {
+      result = result.filter(b => b.Industry === selectedIndustry);
+    }
+    return result;
+  }, [brands, selectedCountry, selectedIndustry]);
 
   const stats = useMemo(() => {
-    const scores = brands.map(b => b.Current_Score).sort((a, b) => a - b);
-    const slopes = brands.map(b => b.Trend_Slope).sort((a, b) => a - b);
-    const volatilities = brands.map(b => b.Volatility);
+    const scores = filteredBrands.map(b => b.Current_Score).sort((a, b) => a - b);
+    const slopes = filteredBrands.map(b => b.Trend_Slope).sort((a, b) => a - b);
+    const volatilities = filteredBrands.map(b => b.Volatility);
     
     const medianScore = scores[Math.floor(scores.length / 2)] || 0;
     const medianSlope = slopes[Math.floor(slopes.length / 2)] || 0;
-    
+
     return {
       medianScore,
       medianSlope,
       minVolatility: Math.min(...volatilities),
       maxVolatility: Math.max(...volatilities),
     };
-  }, [brands]);
+  }, [filteredBrands]);
 
   const chartData = useMemo(() => {
-    return brands
+    return filteredBrands
       .filter(b => 
         searchQuery === '' || 
         b.Brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -140,7 +155,7 @@ export function BrandMomentumChart({
         z: brand.Volatility,
         momentum: getMomentum(brand.Current_Score, brand.Trend_Slope, stats.medianScore, stats.medianSlope),
       }));
-  }, [brands, searchQuery, stats]);
+  }, [filteredBrands, searchQuery, stats.medianScore, stats.medianSlope]);
 
   const domain = useMemo(() => {
     if (chartData.length === 0) return { xDomain: [0, 150] as [number, number], yDomain: [-10, 10] as [number, number] };
@@ -180,10 +195,19 @@ export function BrandMomentumChart({
             <TrendingUp className="h-5 w-5 text-primary" />
             Brand Momentum Analysis
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Labels</span>
-            <Switch checked={showLabels} onCheckedChange={setShowLabels} />
+          <div className="flex items-center gap-3">
+            <ChartFilters
+              brands={brands}
+              selectedCountry={selectedCountry}
+              selectedIndustry={selectedIndustry}
+              onCountryChange={setSelectedCountry}
+              onIndustryChange={setSelectedIndustry}
+            />
+            <div className="flex items-center gap-2">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Labels</span>
+              <Switch checked={showLabels} onCheckedChange={setShowLabels} />
+            </div>
           </div>
         </div>
       </CardHeader>
