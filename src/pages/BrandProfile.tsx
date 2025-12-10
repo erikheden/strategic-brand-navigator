@@ -5,6 +5,7 @@ import { AwarenessAttitudeChart } from '@/components/brand-profile/AwarenessAtti
 import { CompetitorTable } from '@/components/brand-profile/CompetitorTable';
 import { CurrentScoreCard } from '@/components/brand-profile/CurrentScoreCard';
 import { InsightsPanel } from '@/components/brand-profile/InsightsPanel';
+import { SwotPanel } from '@/components/brand-profile/SwotPanel';
 import { ArrowLeft, Loader2, Building2, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -81,8 +82,18 @@ const BrandProfile = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* Insights Panel */}
+        {/* Quick Insights Panel */}
         <InsightsPanel insights={insights} brandName={decodedBrand} />
+
+        {/* SWOT Analysis */}
+        <SwotPanel
+          brandName={decodedBrand}
+          currentData={data.currentData}
+          historicalScores={data.historicalScores}
+          awarenessAttitude={data.awarenessAttitude}
+          competitors={data.competitors}
+          insights={insights}
+        />
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
