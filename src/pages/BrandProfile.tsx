@@ -6,6 +6,10 @@ import { CompetitorTable } from '@/components/brand-profile/CompetitorTable';
 import { CurrentScoreCard } from '@/components/brand-profile/CurrentScoreCard';
 import { InsightsPanel } from '@/components/brand-profile/InsightsPanel';
 import { SwotPanel } from '@/components/brand-profile/SwotPanel';
+import { DiscussionTopicsChart } from '@/components/brand-profile/DiscussionTopicsChart';
+import { KnowledgeLevelsChart } from '@/components/brand-profile/KnowledgeLevelsChart';
+import { PurchasingImpactChart } from '@/components/brand-profile/PurchasingImpactChart';
+import { InfluenceChannelsChart } from '@/components/brand-profile/InfluenceChannelsChart';
 import { ArrowLeft, Loader2, Building2, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -104,6 +108,32 @@ const BrandProfile = () => {
           <AwarenessAttitudeChart 
             data={data.awarenessAttitude}
             brandName={decodedBrand}
+          />
+        </div>
+
+        {/* Consumer Context Section */}
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-foreground">Consumer Context</h2>
+          <p className="text-sm text-muted-foreground">Market-level sustainability insights for {decodedCountry}</p>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <DiscussionTopicsChart 
+            data={data.discussionTopics}
+            country={decodedCountry}
+          />
+          <KnowledgeLevelsChart 
+            data={data.knowledgeLevels}
+            country={decodedCountry}
+          />
+          <PurchasingImpactChart 
+            data={data.purchasingImpact}
+            industry={data.currentData?.industry || ''}
+            country={decodedCountry}
+          />
+          <InfluenceChannelsChart 
+            data={data.influenceChannels}
+            country={decodedCountry}
           />
         </div>
 
