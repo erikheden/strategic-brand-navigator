@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import {
   ScatterChart,
   Scatter,
@@ -11,10 +11,12 @@ import {
   Cell,
   ReferenceLine,
   Label,
+  LabelList,
 } from 'recharts';
 import { Brand } from '@/types/brand';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { TrendingUp, Tag } from 'lucide-react';
 
 interface BrandMomentumChartProps {
   brands: Brand[];
@@ -106,6 +108,8 @@ export function BrandMomentumChart({
   selectedBrand,
   onSelectBrand,
 }: BrandMomentumChartProps) {
+  const [showLabels, setShowLabels] = useState(false);
+
   const stats = useMemo(() => {
     const scores = brands.map(b => b.Current_Score).sort((a, b) => a - b);
     const slopes = brands.map(b => b.Trend_Slope).sort((a, b) => a - b);
@@ -171,10 +175,17 @@ export function BrandMomentumChart({
   return (
     <Card className="shadow-card">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          Brand Momentum Analysis
-        </CardTitle>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Brand Momentum Analysis
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Labels</span>
+            <Switch checked={showLabels} onCheckedChange={setShowLabels} />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-[500px] w-full">
@@ -270,6 +281,18 @@ export function BrandMomentumChart({
                     />
                   );
                 })}
+                {showLabels && (
+                  <LabelList
+                    dataKey="brand.Brand"
+                    position="top"
+                    offset={8}
+                    style={{
+                      fontSize: 10,
+                      fill: 'hsl(var(--foreground))',
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
               </Scatter>
             </ScatterChart>
           </ResponsiveContainer>

@@ -11,10 +11,12 @@ import {
   Cell,
   ReferenceLine,
   Label,
+  LabelList,
 } from 'recharts';
 import { Brand } from '@/types/brand';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SlidersHorizontal } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { SlidersHorizontal, Tag } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -90,6 +92,7 @@ export function CustomExplorerChart({
 }: CustomExplorerChartProps) {
   const [xParam, setXParam] = useState<ParameterKey>('Volatility');
   const [yParam, setYParam] = useState<ParameterKey>('Inflation_Performance');
+  const [showLabels, setShowLabels] = useState(false);
 
   // Get available options for each axis (exclude the other's selection)
   const xOptions = Object.keys(PARAMETER_CONFIG).filter(k => k !== yParam) as ParameterKey[];
@@ -245,6 +248,11 @@ export function CustomExplorerChart({
           </CardTitle>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Labels</span>
+              <Switch checked={showLabels} onCheckedChange={setShowLabels} />
+            </div>
+            <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">X-Axis:</span>
               <Select value={xParam} onValueChange={(v) => setXParam(v as ParameterKey)}>
                 <SelectTrigger className="w-[160px] h-8">
@@ -374,6 +382,18 @@ export function CustomExplorerChart({
                     />
                   );
                 })}
+                {showLabels && (
+                  <LabelList
+                    dataKey="brand.Brand"
+                    position="top"
+                    offset={8}
+                    style={{
+                      fontSize: 10,
+                      fill: 'hsl(var(--foreground))',
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
               </Scatter>
             </ScatterChart>
           </ResponsiveContainer>

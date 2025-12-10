@@ -11,11 +11,13 @@ import {
   Cell,
   ReferenceLine,
   Label,
+  LabelList,
 } from 'recharts';
 import { Brand, getQuadrant, QUADRANT_CONFIG, QuadrantType } from '@/types/brand';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Radar, ZoomIn, RotateCcw } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Radar, ZoomIn, RotateCcw, Tag } from 'lucide-react';
 import {
   Tooltip as TooltipUI,
   TooltipContent,
@@ -75,6 +77,7 @@ export function BrandRadarChart({
   medianInflation,
 }: BrandRadarChartProps) {
   const [zoomedQuadrant, setZoomedQuadrant] = useState<QuadrantType | null>(null);
+  const [showLabels, setShowLabels] = useState(false);
 
   // Calculate min/max scores for size scaling
   const scoreRange = useMemo(() => {
@@ -179,17 +182,24 @@ export function BrandRadarChart({
             <Radar className="h-5 w-5 text-primary" />
             SBI Strategic Brand Radar
           </CardTitle>
-          {zoomedQuadrant && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetZoom}
-              className="gap-1.5"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Reset Zoom
-            </Button>
-          )}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Labels</span>
+              <Switch checked={showLabels} onCheckedChange={setShowLabels} />
+            </div>
+            {zoomedQuadrant && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetZoom}
+                className="gap-1.5"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reset Zoom
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -295,6 +305,18 @@ export function BrandRadarChart({
                     />
                   );
                 })}
+                {showLabels && (
+                  <LabelList
+                    dataKey="brand.Brand"
+                    position="top"
+                    offset={8}
+                    style={{
+                      fontSize: 10,
+                      fill: 'hsl(var(--foreground))',
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
               </Scatter>
             </ScatterChart>
           </ResponsiveContainer>
