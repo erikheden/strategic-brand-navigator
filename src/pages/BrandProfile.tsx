@@ -1,7 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useBrandIntelligence } from '@/hooks/useBrandIntelligence';
 import { HistoricalPerformanceChart } from '@/components/brand-profile/HistoricalPerformanceChart';
-import { AwarenessAttitudeChart } from '@/components/brand-profile/AwarenessAttitudeChart';
 import { CompetitorTable } from '@/components/brand-profile/CompetitorTable';
 import { CurrentScoreCard } from '@/components/brand-profile/CurrentScoreCard';
 import { InsightsPanel } from '@/components/brand-profile/InsightsPanel';
@@ -10,6 +9,10 @@ import { DiscussionTopicsChart } from '@/components/brand-profile/DiscussionTopi
 import { KnowledgeLevelsChart } from '@/components/brand-profile/KnowledgeLevelsChart';
 import { PurchasingImpactChart } from '@/components/brand-profile/PurchasingImpactChart';
 import { InfluenceChannelsChart } from '@/components/brand-profile/InfluenceChannelsChart';
+import { AgeGroupScoresChart } from '@/components/brand-profile/AgeGroupScoresChart';
+import { PrioritiesByAgeChart } from '@/components/brand-profile/PrioritiesByAgeChart';
+import { MaterialityAreasChart } from '@/components/brand-profile/MaterialityAreasChart';
+import { BehaviourGroupsChart } from '@/components/brand-profile/BehaviourGroupsChart';
 import { ArrowLeft, Loader2, Building2, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -100,13 +103,9 @@ const BrandProfile = () => {
         />
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <HistoricalPerformanceChart 
             data={data.historicalScores}
-            brandName={decodedBrand}
-          />
-          <AwarenessAttitudeChart 
-            data={data.awarenessAttitude}
             brandName={decodedBrand}
           />
         </div>
@@ -133,6 +132,31 @@ const BrandProfile = () => {
           />
           <InfluenceChannelsChart 
             data={data.influenceChannels}
+            country={decodedCountry}
+          />
+        </div>
+
+        {/* Demographics Section - Phase 3 */}
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-foreground">Demographics & Segments</h2>
+          <p className="text-sm text-muted-foreground">Age-based perception and consumer behaviour segments</p>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AgeGroupScoresChart 
+            data={data.ageGroupScores}
+            brandName={decodedBrand}
+          />
+          <PrioritiesByAgeChart 
+            data={data.prioritiesByAge}
+            country={decodedCountry}
+          />
+          <MaterialityAreasChart 
+            data={data.materialityAreas}
+            country={decodedCountry}
+          />
+          <BehaviourGroupsChart 
+            data={data.behaviourGroups}
             country={decodedCountry}
           />
         </div>
