@@ -161,7 +161,19 @@ export function useBrandIntelligence(brandName: string, country: string) {
 
       try {
         // Fetch all data in parallel
-        const [historicalRes, awarenessRes, currentRes, discussionRes, knowledgeRes, purchasingRes, influenceRes] = await Promise.all([
+        const [
+          historicalRes,
+          awarenessRes,
+          currentRes,
+          discussionRes,
+          knowledgeRes,
+          purchasingRes,
+          influenceRes,
+          ageScoresRes,
+          prioritiesRes,
+          materialityRes,
+          behaviourRes,
+        ] = await Promise.all([
           // Historical scores 2011-2025 (uses full country names like "Finland")
           supabase
             .from('SBI Ranking Scores 2011-2025')
@@ -186,31 +198,60 @@ export function useBrandIntelligence(brandName: string, country: string) {
             .eq('Country', countryCode)
             .single(),
 
-          // Discussion topics (country-level data)
+          // Discussion topics (country-level data, uses codes)
           supabase
             .from('SBI_Discussion_Topics')
             .select('discussion_topic, percentage, year')
             .eq('country', countryCode)
             .order('year', { ascending: false }),
 
-          // Knowledge levels (country-level data)
+          // Knowledge levels (country-level data, uses codes)
           supabase
             .from('SBI_Knowledge')
             .select('term, percentage, year')
             .eq('country', countryCode)
             .order('year', { ascending: false }),
 
-          // Purchasing decision impact (country-level data)
+          // Purchasing decision impact (country-level data, uses codes)
           supabase
             .from('SBI_purchasing_decision_industries')
             .select('category, impact_level, percentage, year')
             .eq('country', countryCode)
             .order('year', { ascending: false }),
 
-          // Influence channels (country-level data)
+          // Influence channels (country-level data, uses codes)
           supabase
             .from('SBI_influences')
             .select('medium, percentage, year')
+            .eq('country', countryCode)
+            .order('year', { ascending: false }),
+
+          // Age group scores (uses codes)
+          supabase
+            .from('SB Ranking Scores 2019-2025 BY AGE')
+            .select('age, score, social, environment, year')
+            .eq('Brand', brandName)
+            .eq('country', countryCode)
+            .order('year', { ascending: false }),
+
+          // Priorities by age (uses codes)
+          supabase
+            .from('SBI_Priorities_Age_Groups')
+            .select('age, english_label_short, percentage, year')
+            .eq('country', countryCode)
+            .order('year', { ascending: false }),
+
+          // Materiality areas (uses FULL country names)
+          supabase
+            .from('materiality_areas_general_sbi')
+            .select('materiality_area, percentage, year')
+            .eq('country', countryFullName)
+            .order('year', { ascending: false }),
+
+          // Behaviour groups (uses codes)
+          supabase
+            .from('SBI_behaviour_groups')
+            .select('behaviour_group, percentage, year')
             .eq('country', countryCode)
             .order('year', { ascending: false }),
         ]);
@@ -218,13 +259,13 @@ export function useBrandIntelligence(brandName: string, country: string) {
         // Get industry from current data for competitor lookup
         const industry = currentRes.data?.Industry;
 
-        // Fetch competitors (same industry, same country) - uses country codes
+        // Fetch competitors (same industry, same country) - uses FULL country names
         let competitorsData: CompetitorRanking[] = [];
         if (industry) {
           const competitorRes = await supabase
             .from('SBI Ranking Positions 2025 only')
             .select('Brand, "Ranking Position", "Overall Country Ranking", industry')
-            .eq('Country', countryCode)
+            .eq('Country', countryFullName)
             .eq('industry', industry)
             .order('Ranking Position', { ascending: true });
 
@@ -293,6 +334,34 @@ export function useBrandIntelligence(brandName: string, country: string) {
           year: row.year || 0,
         }));
 
+        // Process Phase 3 data
+        const ageGroupScores: AgeScoreItem[] = (ageScoresRes.data || []).map((row) => ({
+          age: row.age || '',
+          score: row.score || 0,
+          social: row.social || 0,
+          environment: row.environment || 0,
+          year: row.year || 0,
+        }));
+
+        const prioritiesByAge: PriorityItem[] = (prioritiesRes.data || []).map((row) => ({
+          age: row.age || '',
+          english_label_short: row.english_label_short || '',
+          percentage: row.percentage || 0,
+          year: row.year || 0,
+        }));
+
+        const materialityAreas: MaterialityItem[] = (materialityRes.data || []).map((row) => ({
+          materiality_area: row.materiality_area || '',
+          percentage: row.percentage || 0,
+          year: row.year || 0,
+        }));
+
+        const behaviourGroups: BehaviourItem[] = (behaviourRes.data || []).map((row) => ({
+          behaviour_group: row.behaviour_group || '',
+          percentage: row.percentage || 0,
+          year: row.year || 0,
+        }));
+
         setData({
           historicalScores,
           awarenessAttitude,
@@ -301,10 +370,10 @@ export function useBrandIntelligence(brandName: string, country: string) {
           knowledgeLevels,
           purchasingImpact,
           influenceChannels,
-          ageGroupScores: [],
-          prioritiesByAge: [],
-          materialityAreas: [],
-          behaviourGroups: [],
+          ageGroupScores,
+          prioritiesByAge,
+          materialityAreas,
+          behaviourGroups,
           currentData,
         });
       } catch (err) {
