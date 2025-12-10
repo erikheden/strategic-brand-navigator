@@ -35,6 +35,38 @@ export interface BrandIntelligence {
   } | null;
 }
 
+// Country code to full name mapping
+const COUNTRY_CODE_TO_NAME: Record<string, string> = {
+  'FI': 'Finland',
+  'SE': 'Sweden',
+  'NO': 'Norway',
+  'DK': 'Denmark',
+  'NL': 'Netherlands',
+  'EE': 'Estonia',
+  'LV': 'Latvia',
+  'LT': 'Lithuania',
+};
+
+const COUNTRY_NAME_TO_CODE: Record<string, string> = {
+  'Finland': 'FI',
+  'Sweden': 'SE',
+  'Norway': 'NO',
+  'Denmark': 'DK',
+  'Netherlands': 'NL',
+  'The Netherlands': 'NL',
+  'Estonia': 'EE',
+  'Latvia': 'LV',
+  'Lithuania': 'LT',
+};
+
+function getFullCountryName(code: string): string {
+  return COUNTRY_CODE_TO_NAME[code] || code;
+}
+
+function getCountryCode(nameOrCode: string): string {
+  return COUNTRY_NAME_TO_CODE[nameOrCode] || nameOrCode;
+}
+
 export function useBrandIntelligence(brandName: string, country: string) {
   const [data, setData] = useState<BrandIntelligence>({
     historicalScores: [],
@@ -55,44 +87,48 @@ export function useBrandIntelligence(brandName: string, country: string) {
       setLoading(true);
       setError(null);
 
+      // Get both country formats
+      const countryCode = getCountryCode(country);
+      const countryFullName = getFullCountryName(country);
+
       try {
         // Fetch all data in parallel
         const [historicalRes, awarenessRes, currentRes] = await Promise.all([
-          // Historical scores 2011-2025
+          // Historical scores 2011-2025 (uses full country names like "Finland")
           supabase
             .from('SBI Ranking Scores 2011-2025')
             .select('Year, Score, industry, Country, Brand')
             .eq('Brand', brandName)
-            .eq('Country', country)
+            .eq('Country', countryFullName)
             .order('Year', { ascending: true }),
 
-          // Awareness & Attitude data
+          // Awareness & Attitude data (uses country codes like "FI")
           supabase
             .from('Awareness_Attitude_2019-2024')
             .select('year, awareness_level, brand_attitude, industry')
             .eq('brand', brandName)
-            .eq('country', country)
+            .eq('country', countryCode)
             .order('year', { ascending: true }),
 
-          // Current inflation/stability data
+          // Current inflation/stability data (uses country codes like "FI")
           supabase
             .from('SBI_Inflation_Stability_2025')
             .select('*')
             .eq('Brand', brandName)
-            .eq('Country', country)
+            .eq('Country', countryCode)
             .single(),
         ]);
 
         // Get industry from current data for competitor lookup
         const industry = currentRes.data?.Industry;
 
-        // Fetch competitors (same industry, same country)
+        // Fetch competitors (same industry, same country) - uses country codes
         let competitorsData: CompetitorRanking[] = [];
         if (industry) {
           const competitorRes = await supabase
             .from('SBI Ranking Positions 2025 only')
             .select('Brand, "Ranking Position", "Overall Country Ranking", industry')
-            .eq('Country', country)
+            .eq('Country', countryCode)
             .eq('industry', industry)
             .order('Ranking Position', { ascending: true });
 
