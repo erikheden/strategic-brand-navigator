@@ -34,14 +34,20 @@ export function AgeGroupScoresChart({ data, brandName }: AgeGroupScoresChartProp
 
   // Get latest year
   const latestYear = Math.max(...data.map(d => d.year));
+
+  // Map numeric age IDs to labels
+  const ageLabels: Record<string, string> = {
+    '1': '16-29 years',
+    '2': '30-44 years',
+    '3': '45-59 years',
+    '4': '60+ years',
+  };
+
   const latestData = data
     .filter(d => d.year === latestYear)
     .map(d => {
-      // Normalize age format to include "years"
-      let ageLabel = d.age.replace(' years', '');
-      if (!ageLabel.includes('years')) {
-        ageLabel = `${ageLabel} years`;
-      }
+      const ageKey = d.age.toString().trim();
+      const ageLabel = ageLabels[ageKey] || d.age;
       return {
         age: ageLabel,
         score: Math.round(d.score * 10) / 10,
