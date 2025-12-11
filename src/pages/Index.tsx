@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { useBrandData } from '@/hooks/useBrandData';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { BrandSearch } from '@/components/dashboard/BrandSearch';
-import { BrandRadarChart } from '@/components/dashboard/BrandRadarChart';
-import { BrandMomentumChart } from '@/components/dashboard/BrandMomentumChart';
 import { CustomExplorerChart } from '@/components/dashboard/CustomExplorerChart';
 import { StrategicInsight } from '@/components/dashboard/StrategicInsight';
 import { BrandTable } from '@/components/dashboard/BrandTable';
@@ -48,28 +46,12 @@ const Index = () => {
         </div>
 
         {/* Charts */}
-        <div className="space-y-6">
-          <BrandRadarChart
-            brands={brands}
-            searchQuery={searchQuery}
-            selectedBrand={selectedBrand}
-            onSelectBrand={setSelectedBrand}
-            medianVolatility={stats.medianVolatility}
-            medianInflation={stats.medianInflation}
-          />
-          <BrandMomentumChart
-            brands={brands}
-            searchQuery={searchQuery}
-            selectedBrand={selectedBrand}
-            onSelectBrand={setSelectedBrand}
-          />
-          <CustomExplorerChart
-            brands={brands}
-            searchQuery={searchQuery}
-            selectedBrand={selectedBrand}
-            onSelectBrand={setSelectedBrand}
-          />
-        </div>
+        <CustomExplorerChart
+          brands={brands}
+          searchQuery={searchQuery}
+          selectedBrand={selectedBrand}
+          onSelectBrand={setSelectedBrand}
+        />
 
         {/* Strategic Insight */}
         <StrategicInsight
