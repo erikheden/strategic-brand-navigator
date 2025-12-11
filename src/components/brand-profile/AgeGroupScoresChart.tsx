@@ -19,11 +19,11 @@ export function AgeGroupScoresChart({ data, brandName }: AgeGroupScoresChartProp
   if (!data || data.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Users className="h-5 w-5 text-primary" />
-            Score by Age Group
-          </CardTitle>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Users className="h-5 w-5 text-primary" />
+          SBI Score & Pillars by Age
+        </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">No age group score data available for {brandName}.</p>
@@ -53,7 +53,7 @@ export function AgeGroupScoresChart({ data, brandName }: AgeGroupScoresChartProp
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Users className="h-5 w-5 text-primary" />
-          Score by Age Group
+          SBI Score & Pillars by Age
           <span className="text-sm font-normal text-muted-foreground ml-auto">{latestYear}</span>
         </CardTitle>
       </CardHeader>
