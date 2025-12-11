@@ -10,17 +10,31 @@ export function useBrandData() {
   useEffect(() => {
     async function loadData() {
       try {
-        // Fetch all brands with explicit range to avoid 1000 row default limit
-        const { data, error: queryError } = await supabase
-          .from('SBI_Inflation_Stability_2025')
-          .select('*')
-          .range(0, 1999); // Fetch up to 2000 brands
+        // Fetch all brands using pagination to bypass 1000 row limit
+        const PAGE_SIZE = 1000;
+        let allData: any[] = [];
+        let page = 0;
+        let hasMore = true;
 
-        if (queryError) {
-          throw queryError;
+        while (hasMore) {
+          const start = page * PAGE_SIZE;
+          const end = start + PAGE_SIZE - 1;
+
+          const { data, error: queryError } = await supabase
+            .from('SBI_Inflation_Stability_2025')
+            .select('*')
+            .range(start, end);
+
+          if (queryError) {
+            throw queryError;
+          }
+
+          allData = [...allData, ...(data || [])];
+          hasMore = (data?.length || 0) === PAGE_SIZE;
+          page++;
         }
 
-        const validBrands: Brand[] = (data || [])
+        const validBrands: Brand[] = allData
           .filter(row => row.Brand && row.Volatility !== null)
           .map(row => ({
             Brand: row.Brand || '',
