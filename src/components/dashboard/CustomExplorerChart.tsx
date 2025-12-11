@@ -409,12 +409,14 @@ export function CustomExplorerChart({
                 <Label
                   value={getXAxisLabel()}
                   position="bottom"
-                  offset={35}
+                  offset={40}
                   style={{
                     textAnchor: 'middle',
                     fill: 'hsl(var(--foreground))',
-                    fontSize: 12,
-                    fontWeight: 500,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
                   }}
                 />
               </XAxis>
@@ -432,12 +434,14 @@ export function CustomExplorerChart({
                   value={getYAxisLabel()}
                   angle={-90}
                   position="insideLeft"
-                  offset={-45}
+                  offset={-50}
                   style={{
                     textAnchor: 'middle',
                     fill: 'hsl(var(--foreground))',
-                    fontSize: 12,
-                    fontWeight: 500,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
                   }}
                 />
               </YAxis>
