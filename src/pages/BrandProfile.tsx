@@ -5,14 +5,8 @@ import { CompetitorTable } from '@/components/brand-profile/CompetitorTable';
 import { CurrentScoreCard } from '@/components/brand-profile/CurrentScoreCard';
 import { InsightsPanel } from '@/components/brand-profile/InsightsPanel';
 import { SwotPanel } from '@/components/brand-profile/SwotPanel';
-import { DiscussionTopicsChart } from '@/components/brand-profile/DiscussionTopicsChart';
-import { KnowledgeLevelsChart } from '@/components/brand-profile/KnowledgeLevelsChart';
-import { PurchasingImpactChart } from '@/components/brand-profile/PurchasingImpactChart';
-import { InfluenceChannelsChart } from '@/components/brand-profile/InfluenceChannelsChart';
 import { AgeGroupScoresChart } from '@/components/brand-profile/AgeGroupScoresChart';
-import { PrioritiesByAgeChart } from '@/components/brand-profile/PrioritiesByAgeChart';
 import { MaterialityAreasChart } from '@/components/brand-profile/MaterialityAreasChart';
-import { BehaviourGroupsChart } from '@/components/brand-profile/BehaviourGroupsChart';
 import { ArrowLeft, Loader2, Building2, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -110,36 +104,10 @@ const BrandProfile = () => {
           />
         </div>
 
-        {/* Consumer Context Section */}
+        {/* Demographics Section */}
         <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-foreground">Consumer Context</h2>
-          <p className="text-sm text-muted-foreground">Market-level sustainability insights for {decodedCountry}</p>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <DiscussionTopicsChart 
-            data={data.discussionTopics}
-            country={decodedCountry}
-          />
-          <KnowledgeLevelsChart 
-            data={data.knowledgeLevels}
-            country={decodedCountry}
-          />
-          <PurchasingImpactChart 
-            data={data.purchasingImpact}
-            industry={data.currentData?.industry || ''}
-            country={decodedCountry}
-          />
-          <InfluenceChannelsChart 
-            data={data.influenceChannels}
-            country={decodedCountry}
-          />
-        </div>
-
-        {/* Demographics Section - Phase 3 */}
-        <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-foreground">Demographics & Segments</h2>
-          <p className="text-sm text-muted-foreground">Age-based perception and consumer behaviour segments</p>
+          <h2 className="text-xl font-semibold text-foreground">Demographics & Materiality</h2>
+          <p className="text-sm text-muted-foreground">Age-based perception and sustainability priorities</p>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -147,16 +115,8 @@ const BrandProfile = () => {
             data={data.ageGroupScores}
             brandName={decodedBrand}
           />
-          <PrioritiesByAgeChart 
-            data={data.prioritiesByAge}
-            country={decodedCountry}
-          />
           <MaterialityAreasChart 
             data={data.materialityAreas}
-            country={decodedCountry}
-          />
-          <BehaviourGroupsChart 
-            data={data.behaviourGroups}
             country={decodedCountry}
           />
         </div>
