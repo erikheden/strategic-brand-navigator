@@ -76,8 +76,8 @@ export function AgeGroupScoresChart({ data, brandName }: AgeGroupScoresChartProp
               }}
             />
             <Legend />
-            <Bar dataKey="environment" name="Environment" stackId="pillars" fill="hsl(var(--chart-4))" />
-            <Bar dataKey="social" name="Social" stackId="pillars" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="environment" name="Environment" stackId="pillars" fill="hsl(142 71% 45%)" />
+            <Bar dataKey="social" name="Social" stackId="pillars" fill="hsl(221 83% 53%)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
