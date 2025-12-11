@@ -20,6 +20,7 @@ export interface CompetitorRanking {
   rankingPosition: number;
   overallRanking: number;
   industry: string;
+  country: string;
 }
 
 export interface DiscussionTopic {
@@ -264,7 +265,7 @@ export function useBrandIntelligence(brandName: string, country: string) {
         if (industry) {
           const competitorRes = await supabase
             .from('SBI Ranking Positions 2025 only')
-            .select('Brand, "Ranking Position", "Overall Country Ranking", industry')
+            .select('Brand, "Ranking Position", "Overall Country Ranking", industry, Country')
             .eq('Country', countryFullName)
             .eq('industry', industry)
             .order('Ranking Position', { ascending: true });
@@ -275,6 +276,7 @@ export function useBrandIntelligence(brandName: string, country: string) {
               rankingPosition: c['Ranking Position'] || 0,
               overallRanking: c['Overall Country Ranking'] || 0,
               industry: c.industry || '',
+              country: c.Country || countryFullName,
             }));
           }
         }
