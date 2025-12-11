@@ -1,1 +1,4 @@
 project_id = "deowszajnzvpxjwvonzb"
+
+[functions.brand-intelligence]
+verify_jwt = false
