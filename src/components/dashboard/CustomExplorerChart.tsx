@@ -528,23 +528,32 @@ export function CustomExplorerChart({
           </div>
         </div>
 
-        {/* Quadrant Legend */}
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.topRight}15` }}>
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.topRight }} />
-            <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.topRight }}>High X, High Y</span>
+        {/* Brand Count & Quadrant Legend */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="text-xs text-muted-foreground">
+            Showing <span className="font-semibold text-foreground">{chartData.length}</span> of{' '}
+            <span className="font-semibold text-foreground">{filteredBrands.length}</span> brands
+            {filteredBrands.length !== brands.length && (
+              <span> (filtered from {brands.length} total)</span>
+            )}
           </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.topLeft}15` }}>
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.topLeft }} />
-            <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.topLeft }}>Low X, High Y</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.bottomRight}15` }}>
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.bottomRight }} />
-            <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.bottomRight }}>High X, Low Y</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.bottomLeft}15` }}>
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.bottomLeft }} />
-            <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.bottomLeft }}>Low X, Low Y</span>
+          <div className="flex flex-wrap gap-3">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.topRight}15` }}>
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.topRight }} />
+              <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.topRight }}>High X, High Y</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.topLeft}15` }}>
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.topLeft }} />
+              <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.topLeft }}>Low X, High Y</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.bottomRight}15` }}>
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.bottomRight }} />
+              <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.bottomRight }}>High X, Low Y</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.bottomLeft}15` }}>
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.bottomLeft }} />
+              <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.bottomLeft }}>Low X, Low Y</span>
+            </div>
           </div>
         </div>
       </CardContent>
