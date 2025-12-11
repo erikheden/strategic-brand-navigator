@@ -22,7 +22,7 @@ export function AgeGroupScoresChart({ data, brandName }: AgeGroupScoresChartProp
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Users className="h-5 w-5 text-primary" />
-          SBI Score & Pillars by Age
+          SBI Score & Pillars
         </CardTitle>
         </CardHeader>
         <CardContent>
@@ -53,7 +53,7 @@ export function AgeGroupScoresChart({ data, brandName }: AgeGroupScoresChartProp
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Users className="h-5 w-5 text-primary" />
-          SBI Score & Pillars by Age
+          SBI Score & Pillars
           <span className="text-sm font-normal text-muted-foreground ml-auto">{latestYear}</span>
         </CardTitle>
       </CardHeader>
