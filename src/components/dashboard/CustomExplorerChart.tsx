@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { SlidersHorizontal, Tag, Sparkles } from 'lucide-react';
+import sbIndexLogo from '@/assets/sb-index-logo.png';
 import {
   Select,
   SelectContent,
@@ -386,7 +387,12 @@ export function CustomExplorerChart({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-[500px] w-full">
+        <div className="h-[500px] w-full relative">
+          <img 
+            src={sbIndexLogo} 
+            alt="Sustainable Brand Index" 
+            className="absolute top-2 right-2 h-8 opacity-40 z-10 pointer-events-none"
+          />
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart
               margin={{ top: 40, right: 40, bottom: 60, left: 60 }}
