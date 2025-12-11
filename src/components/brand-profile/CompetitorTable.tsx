@@ -89,7 +89,7 @@ export function CompetitorTable({ competitors, currentBrand, industry }: Competi
                       <span className="font-semibold text-primary">{competitor.brand}</span>
                     ) : (
                       <Link 
-                        to={`/brand/${encodeURIComponent(competitor.brand)}/${encodeURIComponent(competitor.industry ? competitor.industry.split(' ')[0] : 'Unknown')}`}
+                        to={`/brand/${encodeURIComponent(competitor.brand)}/${encodeURIComponent(competitor.country || 'Unknown')}`}
                         className="text-muted-foreground hover:text-primary hover:underline"
                       >
                         {competitor.brand}
