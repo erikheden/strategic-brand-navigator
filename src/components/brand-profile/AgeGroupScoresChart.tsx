@@ -59,7 +59,7 @@ export function AgeGroupScoresChart({ data, brandName }: AgeGroupScoresChartProp
       </CardHeader>
       <CardContent>
         <p className="text-xs text-muted-foreground mb-4">
-          How different age groups perceive {brandName}
+          Total SBI score = Environmental + Social pillars
         </p>
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={latestData} margin={{ left: 0, right: 20 }}>
@@ -71,11 +71,13 @@ export function AgeGroupScoresChart({ data, brandName }: AgeGroupScoresChartProp
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px'
               }}
+              formatter={(value: number, name: string) => {
+                return [`${value}`, name];
+              }}
             />
             <Legend />
-            <Bar dataKey="score" name="Overall Score" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="social" name="Social" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="environment" name="Environment" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="environment" name="Environment" stackId="pillars" fill="hsl(var(--chart-4))" />
+            <Bar dataKey="social" name="Social" stackId="pillars" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
