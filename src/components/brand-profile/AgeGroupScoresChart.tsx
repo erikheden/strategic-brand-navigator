@@ -36,15 +36,21 @@ export function AgeGroupScoresChart({ data, brandName }: AgeGroupScoresChartProp
   const latestYear = Math.max(...data.map(d => d.year));
   const latestData = data
     .filter(d => d.year === latestYear)
-    .map(d => ({
-      age: d.age.replace(' years', ''),
-      score: Math.round(d.score * 10) / 10,
-      social: Math.round(d.social * 10) / 10,
-      environment: Math.round(d.environment * 10) / 10,
-    }))
+    .map(d => {
+      // Normalize age format to include "years"
+      let ageLabel = d.age.replace(' years', '');
+      if (!ageLabel.includes('years')) {
+        ageLabel = `${ageLabel} years`;
+      }
+      return {
+        age: ageLabel,
+        score: Math.round(d.score * 10) / 10,
+        social: Math.round(d.social * 10) / 10,
+        environment: Math.round(d.environment * 10) / 10,
+      };
+    })
     .sort((a, b) => {
-      // Sort by age order
-      const ageOrder = ['16-29', '30-44', '45-59', '60+'];
+      const ageOrder = ['16-29 years', '30-44 years', '45-59 years', '60+ years'];
       return ageOrder.indexOf(a.age) - ageOrder.indexOf(b.age);
     });
 
