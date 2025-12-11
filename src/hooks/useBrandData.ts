@@ -10,9 +10,11 @@ export function useBrandData() {
   useEffect(() => {
     async function loadData() {
       try {
+        // Fetch all brands with explicit range to avoid 1000 row default limit
         const { data, error: queryError } = await supabase
           .from('SBI_Inflation_Stability_2025')
-          .select('*');
+          .select('*')
+          .range(0, 1999); // Fetch up to 2000 brands
 
         if (queryError) {
           throw queryError;
