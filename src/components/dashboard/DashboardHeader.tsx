@@ -1,5 +1,7 @@
-import { BarChart3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BarChart3, Sparkles } from 'lucide-react';
 import { MethodologyModal } from './MethodologyModal';
+import { Button } from '@/components/ui/button';
 
 export function DashboardHeader() {
   return (
@@ -14,7 +16,15 @@ export function DashboardHeader() {
             <p className="text-sm text-muted-foreground">2025 Strategic Analysis Dashboard</p>
           </div>
         </div>
-        <MethodologyModal />
+        <div className="flex items-center gap-3">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/insights" className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              AI Insights
+            </Link>
+          </Button>
+          <MethodologyModal />
+        </div>
       </div>
     </header>
   );
