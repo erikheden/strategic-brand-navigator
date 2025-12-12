@@ -267,9 +267,12 @@ export function CustomExplorerChart({
 
   const handleClick = useCallback((data: any) => {
     if (data && data.payload) {
-      const clickedBrand = data.payload.brand;
+      const clickedBrand = data.payload.brand as Brand;
+      const clickedKey = `${clickedBrand.Brand}-${clickedBrand.Country}`;
+      const selectedKey = selectedBrand ? `${selectedBrand.Brand}-${selectedBrand.Country}` : null;
+      
       // Toggle selection: deselect if already selected, otherwise select
-      if (selectedBrand && selectedBrand.Brand === clickedBrand.Brand && selectedBrand.Country === clickedBrand.Country) {
+      if (selectedKey === clickedKey) {
         onSelectBrand(null);
       } else {
         onSelectBrand(clickedBrand);
