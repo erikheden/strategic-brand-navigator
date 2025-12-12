@@ -267,9 +267,15 @@ export function CustomExplorerChart({
 
   const handleClick = useCallback((data: any) => {
     if (data && data.payload) {
-      onSelectBrand(data.payload.brand);
+      const clickedBrand = data.payload.brand;
+      // Toggle selection: deselect if already selected, otherwise select
+      if (selectedBrand && selectedBrand.Brand === clickedBrand.Brand && selectedBrand.Country === clickedBrand.Country) {
+        onSelectBrand(null);
+      } else {
+        onSelectBrand(clickedBrand);
+      }
     }
-  }, [onSelectBrand]);
+  }, [onSelectBrand, selectedBrand]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
