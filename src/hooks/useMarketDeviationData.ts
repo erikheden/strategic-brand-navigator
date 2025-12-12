@@ -57,28 +57,20 @@ export const useMarketDeviationData = () => {
 
         if (avgError) throw avgError;
 
-        // Fetch brand scores (paginated to get all)
-        let allBrandScores: any[] = [];
-        let offset = 0;
-        const limit = 1000;
-        
-        while (true) {
-          const { data: brandData, error: brandError } = await supabase
-            .from('SBI Ranking Scores 2011-2025')
-            .select('Brand, Country, Year, Score, industry')
-            .not('Brand', 'is', null)
-            .not('Country', 'is', null)
-            .not('Year', 'is', null)
-            .not('Score', 'is', null)
-            .range(offset, offset + limit - 1);
+        // Fetch brand scores - simplified query without pagination
+        // We'll fetch on-demand per country to avoid timeout
+        const { data: brandData, error: brandError } = await supabase
+          .from('SBI Ranking Scores 2011-2025')
+          .select('Brand, Country, Year, Score, industry')
+          .not('Brand', 'is', null)
+          .not('Country', 'is', null)
+          .not('Year', 'is', null)
+          .not('Score', 'is', null)
+          .limit(5000);
 
-          if (brandError) throw brandError;
-          if (!brandData || brandData.length === 0) break;
-          
-          allBrandScores = [...allBrandScores, ...brandData];
-          if (brandData.length < limit) break;
-          offset += limit;
-        }
+        if (brandError) throw brandError;
+        
+        const allBrandScores = brandData || [];
 
         // Transform market averages
         const transformedAverages: MarketAverage[] = (avgData || []).map(row => ({

@@ -3,7 +3,6 @@ import { useBrandData } from '@/hooks/useBrandData';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { BrandSearch } from '@/components/dashboard/BrandSearch';
 import { CustomExplorerChart } from '@/components/dashboard/CustomExplorerChart';
-import { MarketDeviationChart } from '@/components/dashboard/MarketDeviationChart';
 import { StrategicInsight } from '@/components/dashboard/StrategicInsight';
 import { BrandTable } from '@/components/dashboard/BrandTable';
 import { Brand } from '@/types/brand';
@@ -53,9 +52,6 @@ const Index = () => {
           selectedBrand={selectedBrand}
           onSelectBrand={setSelectedBrand}
         />
-
-        {/* Market Deviation Analysis */}
-        <MarketDeviationChart />
 
         {/* Strategic Insight */}
         <StrategicInsight
