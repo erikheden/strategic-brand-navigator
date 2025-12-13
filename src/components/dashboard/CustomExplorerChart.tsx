@@ -17,7 +17,7 @@ import { Brand } from '@/types/brand';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { SlidersHorizontal, Tag, Sparkles } from 'lucide-react';
+import { SlidersHorizontal, Tag, Sparkles, ZoomIn, RotateCcw } from 'lucide-react';
 import sbIndexLogo from '@/assets/sb-index-logo.png';
 import {
   Select,
@@ -29,6 +29,7 @@ import {
 import { ChartFilters } from './ChartFilters';
 
 type ParameterKey = 'Current_Score' | 'Volatility' | 'Trend_Slope' | 'Inflation_Performance';
+type QuadrantKey = 'topRight' | 'topLeft' | 'bottomRight' | 'bottomLeft' | null;
 
 interface ParameterConfig {
   label: string;
@@ -111,6 +112,13 @@ const QUADRANT_COLORS = {
   bottomLeft: 'hsl(0, 84%, 60%)',    // Red - bad in both
 };
 
+const QUADRANT_LABELS = {
+  topRight: { emoji: '👑', name: 'High X, High Y' },
+  topLeft: { emoji: '🚀', name: 'Low X, High Y' },
+  bottomRight: { emoji: '🐢', name: 'High X, Low Y' },
+  bottomLeft: { emoji: '🚩', name: 'Low X, Low Y' },
+};
+
 interface CustomExplorerChartProps {
   brands: Brand[];
   searchQuery: string;
@@ -124,6 +132,7 @@ interface ChartDataPoint {
   y: number;
   z: number;
   quadrantColor: string;
+  quadrant: QuadrantKey;
 }
 
 export function CustomExplorerChart({
@@ -138,6 +147,7 @@ export function CustomExplorerChart({
   const [activePreset, setActivePreset] = useState<string | null>('inflation-survivors');
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+  const [zoomedQuadrant, setZoomedQuadrant] = useState<QuadrantKey>(null);
 
   // Filter brands by country/industry
   const filteredBrands = useMemo(() => {
@@ -217,15 +227,20 @@ export function CustomExplorerChart({
         const x = PARAMETER_CONFIG[xParam].invert ? -rawX : rawX;
         const y = PARAMETER_CONFIG[yParam].invert ? -rawY : rawY;
 
-        // Determine quadrant color based on position relative to medians
+        // Determine quadrant based on position relative to medians
+        let quadrant: QuadrantKey;
         let quadrantColor: string;
         if (x >= medianX && y >= medianY) {
+          quadrant = 'topRight';
           quadrantColor = QUADRANT_COLORS.topRight;
         } else if (x < medianX && y >= medianY) {
+          quadrant = 'topLeft';
           quadrantColor = QUADRANT_COLORS.topLeft;
         } else if (x >= medianX && y < medianY) {
+          quadrant = 'bottomRight';
           quadrantColor = QUADRANT_COLORS.bottomRight;
         } else {
+          quadrant = 'bottomLeft';
           quadrantColor = QUADRANT_COLORS.bottomLeft;
         }
 
@@ -235,21 +250,28 @@ export function CustomExplorerChart({
           y,
           z: brand.Current_Score,
           quadrantColor,
+          quadrant,
         };
       });
   }, [filteredBrands, searchQuery, xParam, yParam, medianX, medianY]);
 
-  // Calculate domain
+  // Filter data by zoomed quadrant
+  const displayData = useMemo(() => {
+    if (!zoomedQuadrant) return chartData;
+    return chartData.filter(d => d.quadrant === zoomedQuadrant);
+  }, [chartData, zoomedQuadrant]);
+
+  // Calculate domain based on displayed data (for zoom)
   const { xDomain, yDomain } = useMemo(() => {
-    if (chartData.length === 0) {
+    if (displayData.length === 0) {
       return {
         xDomain: [-50, 50] as [number, number],
         yDomain: [-20, 40] as [number, number],
       };
     }
 
-    const xValues = chartData.map(d => d.x);
-    const yValues = chartData.map(d => d.y);
+    const xValues = displayData.map(d => d.x);
+    const yValues = displayData.map(d => d.y);
 
     const xMin = Math.min(...xValues);
     const xMax = Math.max(...xValues);
@@ -263,7 +285,7 @@ export function CustomExplorerChart({
       xDomain: [xMin - xPadding, xMax + xPadding] as [number, number],
       yDomain: [yMin - yPadding, yMax + yPadding] as [number, number],
     };
-  }, [chartData]);
+  }, [displayData]);
 
   const handleClick = useCallback((data: any) => {
     if (data && data.payload) {
@@ -485,11 +507,11 @@ export function CustomExplorerChart({
               <Tooltip content={<CustomTooltip />} />
 
               <Scatter
-                data={chartData}
+                data={displayData}
                 onClick={handleClick}
                 cursor="pointer"
               >
-                {chartData.map((entry, index) => {
+                {displayData.map((entry, index) => {
                   const isSelected = selectedBrand?.Brand === entry.brand.Brand;
                   return (
                     <Cell
@@ -537,32 +559,45 @@ export function CustomExplorerChart({
           </div>
         </div>
 
-        {/* Brand Count & Quadrant Legend */}
+        {/* Brand Count & Quadrant Zoom Controls */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
           <div className="text-xs text-muted-foreground">
-            Showing <span className="font-semibold text-foreground">{chartData.length}</span> of{' '}
-            <span className="font-semibold text-foreground">{filteredBrands.length}</span> brands
-            {filteredBrands.length !== brands.length && (
-              <span> (filtered from {brands.length} total)</span>
+            Showing <span className="font-semibold text-foreground">{displayData.length}</span> of{' '}
+            <span className="font-semibold text-foreground">{chartData.length}</span> brands
+            {zoomedQuadrant && (
+              <span className="ml-2 text-primary">(zoomed to {QUADRANT_LABELS[zoomedQuadrant].name})</span>
             )}
           </div>
-          <div className="flex flex-wrap gap-3">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.topRight}15` }}>
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.topRight }} />
-              <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.topRight }}>High X, High Y</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.topLeft}15` }}>
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.topLeft }} />
-              <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.topLeft }}>Low X, High Y</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.bottomRight}15` }}>
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.bottomRight }} />
-              <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.bottomRight }}>High X, Low Y</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${QUADRANT_COLORS.bottomLeft}15` }}>
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANT_COLORS.bottomLeft }} />
-              <span className="text-xs font-medium" style={{ color: QUADRANT_COLORS.bottomLeft }}>Low X, Low Y</span>
-            </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <ZoomIn className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground mr-1">Zoom:</span>
+            {(Object.keys(QUADRANT_COLORS) as Array<keyof typeof QUADRANT_COLORS>).map((quadrant) => (
+              <Button
+                key={quadrant}
+                variant={zoomedQuadrant === quadrant ? "default" : "outline"}
+                size="sm"
+                onClick={() => setZoomedQuadrant(zoomedQuadrant === quadrant ? null : quadrant)}
+                className="h-7 text-xs gap-1"
+                style={{
+                  borderColor: QUADRANT_COLORS[quadrant],
+                  backgroundColor: zoomedQuadrant === quadrant ? QUADRANT_COLORS[quadrant] : 'transparent',
+                  color: zoomedQuadrant === quadrant ? 'white' : QUADRANT_COLORS[quadrant],
+                }}
+              >
+                {QUADRANT_LABELS[quadrant].emoji} {QUADRANT_LABELS[quadrant].name}
+              </Button>
+            ))}
+            {zoomedQuadrant && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setZoomedQuadrant(null)}
+                className="h-7 text-xs gap-1"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Reset
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>
