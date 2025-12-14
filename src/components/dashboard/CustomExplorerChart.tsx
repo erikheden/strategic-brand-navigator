@@ -148,6 +148,7 @@ export function CustomExplorerChart({
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const [zoomedQuadrant, setZoomedQuadrant] = useState<QuadrantKey>(null);
+  const [hideOutliers, setHideOutliers] = useState(false);
 
   // Filter brands by country/industry
   const filteredBrands = useMemo(() => {
@@ -255,11 +256,36 @@ export function CustomExplorerChart({
       });
   }, [filteredBrands, searchQuery, xParam, yParam, medianX, medianY]);
 
+  // Filter outliers using IQR method
+  const dataWithoutOutliers = useMemo(() => {
+    if (!hideOutliers || chartData.length < 4) return chartData;
+
+    const xValues = chartData.map(d => d.x).sort((a, b) => a - b);
+    const yValues = chartData.map(d => d.y).sort((a, b) => a - b);
+
+    const q1X = xValues[Math.floor(xValues.length * 0.25)];
+    const q3X = xValues[Math.floor(xValues.length * 0.75)];
+    const iqrX = q3X - q1X;
+    const lowerX = q1X - 1.5 * iqrX;
+    const upperX = q3X + 1.5 * iqrX;
+
+    const q1Y = yValues[Math.floor(yValues.length * 0.25)];
+    const q3Y = yValues[Math.floor(yValues.length * 0.75)];
+    const iqrY = q3Y - q1Y;
+    const lowerY = q1Y - 1.5 * iqrY;
+    const upperY = q3Y + 1.5 * iqrY;
+
+    return chartData.filter(d => 
+      d.x >= lowerX && d.x <= upperX && 
+      d.y >= lowerY && d.y <= upperY
+    );
+  }, [chartData, hideOutliers]);
+
   // Filter data by zoomed quadrant
   const displayData = useMemo(() => {
-    if (!zoomedQuadrant) return chartData;
-    return chartData.filter(d => d.quadrant === zoomedQuadrant);
-  }, [chartData, zoomedQuadrant]);
+    if (!zoomedQuadrant) return dataWithoutOutliers;
+    return dataWithoutOutliers.filter(d => d.quadrant === zoomedQuadrant);
+  }, [dataWithoutOutliers, zoomedQuadrant]);
 
   // Calculate domain based on displayed data (for zoom)
   const { xDomain, yDomain } = useMemo(() => {
@@ -364,6 +390,10 @@ export function CustomExplorerChart({
                 <Tag className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Labels</span>
                 <Switch checked={showLabels} onCheckedChange={setShowLabels} />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Hide Outliers</span>
+                <Switch checked={hideOutliers} onCheckedChange={setHideOutliers} />
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">X-Axis:</span>
