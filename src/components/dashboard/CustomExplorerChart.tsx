@@ -178,6 +178,7 @@ export function CustomExplorerChart({
   const [focusedBrands, setFocusedBrands] = useState<string[]>([]);
   const [showGhostLayer, setShowGhostLayer] = useState(true);
   const [brandSearchOpen, setBrandSearchOpen] = useState(false);
+  const [brandSearchQuery, setBrandSearchQuery] = useState('');
 
   // Filter brands by country/industry
   const filteredBrands = useMemo(() => {
@@ -240,6 +241,24 @@ export function CustomExplorerChart({
       }))
       .sort((a, b) => a.brand.localeCompare(b.brand));
   }, [brands, xParam, yParam]);
+
+  // Filter brands for dropdown based on search query
+  const filteredBrandsForDropdown = useMemo(() => {
+    const query = brandSearchQuery.toLowerCase().trim();
+    const available = availableBrandsForSelection.filter(b => !focusedBrands.includes(b.key));
+    
+    if (!query) {
+      return available.slice(0, 100); // Show first 100 when no search
+    }
+    
+    return available
+      .filter(b => 
+        b.brand.toLowerCase().includes(query) || 
+        b.country.toLowerCase().includes(query) ||
+        b.industry.toLowerCase().includes(query)
+      )
+      .slice(0, 100); // Show up to 100 matching results
+  }, [availableBrandsForSelection, focusedBrands, brandSearchQuery]);
 
   // Calculate medians for the selected parameters
   const { medianX, medianY, scoreRange } = useMemo(() => {
@@ -535,7 +554,10 @@ export function CustomExplorerChart({
             <Search className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-muted-foreground mr-1">Focus brands:</span>
             
-            <Popover open={brandSearchOpen} onOpenChange={setBrandSearchOpen}>
+            <Popover open={brandSearchOpen} onOpenChange={(open) => {
+              setBrandSearchOpen(open);
+              if (!open) setBrandSearchQuery('');
+            }}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -548,19 +570,25 @@ export function CustomExplorerChart({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[300px] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search brands..." />
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Search brands by name, country, or industry..." 
+                    value={brandSearchQuery}
+                    onValueChange={setBrandSearchQuery}
+                  />
                   <CommandList>
-                    <CommandEmpty>No brands found.</CommandEmpty>
-                    <CommandGroup>
-                      {availableBrandsForSelection
-                        .filter(b => !focusedBrands.includes(b.key))
-                        .slice(0, 50)
-                        .map(b => (
+                    <CommandEmpty>
+                      {brandSearchQuery ? 'No brands found matching your search.' : 'Type to search brands...'}
+                    </CommandEmpty>
+                    <CommandGroup heading={`${filteredBrandsForDropdown.length} brands${brandSearchQuery ? ' found' : ''}`}>
+                      {filteredBrandsForDropdown.map(b => (
                           <CommandItem
                             key={b.key}
                             value={b.key}
-                            onSelect={() => handleAddBrand(b.key)}
+                            onSelect={() => {
+                              handleAddBrand(b.key);
+                              setBrandSearchQuery('');
+                            }}
                           >
                             <span className="font-medium">{b.brand}</span>
                             <span className="text-muted-foreground ml-2 text-xs">
