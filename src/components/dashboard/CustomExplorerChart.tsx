@@ -746,6 +746,7 @@ export function CustomExplorerChart({
                   data={ghostData}
                   onClick={handleClick}
                   cursor="pointer"
+                  shape="circle"
                 >
                   {ghostData.map((entry, index) => (
                     <Cell
@@ -763,6 +764,7 @@ export function CustomExplorerChart({
                 data={focusedData}
                 onClick={handleClick}
                 cursor="pointer"
+                shape="circle"
               >
                 {focusedData.map((entry, index) => {
                   const brandKey = `${entry.brand.Brand}-${entry.brand.Country}`;
