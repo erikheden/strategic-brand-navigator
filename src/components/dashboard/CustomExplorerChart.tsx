@@ -17,7 +17,8 @@ import { Brand } from '@/types/brand';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { SlidersHorizontal, Tag, Sparkles, ZoomIn, RotateCcw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { SlidersHorizontal, Tag, Sparkles, ZoomIn, RotateCcw, Search, X, Eye } from 'lucide-react';
 import sbIndexLogo from '@/assets/sb-index-logo.png';
 import {
   Select,
@@ -26,6 +27,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ChartFilters } from './ChartFilters';
 
 type ParameterKey = 'Current_Score' | 'Volatility' | 'Trend_Slope' | 'Inflation_Performance';
@@ -119,6 +133,18 @@ const QUADRANT_LABELS = {
   bottomLeft: { emoji: '🚩', name: 'Low X, Low Y' },
 };
 
+// Colors for highlighted brands
+const BRAND_COLORS = [
+  'hsl(221, 83%, 53%)', // Blue
+  'hsl(262, 83%, 58%)', // Purple
+  'hsl(330, 81%, 60%)', // Pink
+  'hsl(173, 80%, 40%)', // Teal
+  'hsl(43, 96%, 56%)',  // Yellow
+  'hsl(280, 87%, 65%)', // Violet
+  'hsl(190, 95%, 39%)', // Cyan
+  'hsl(350, 89%, 60%)', // Rose
+];
+
 interface CustomExplorerChartProps {
   brands: Brand[];
   searchQuery: string;
@@ -149,6 +175,9 @@ export function CustomExplorerChart({
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const [zoomedQuadrant, setZoomedQuadrant] = useState<QuadrantKey>(null);
   const [hideOutliers, setHideOutliers] = useState(false);
+  const [focusedBrands, setFocusedBrands] = useState<string[]>([]);
+  const [showGhostLayer, setShowGhostLayer] = useState(true);
+  const [brandSearchOpen, setBrandSearchOpen] = useState(false);
 
   // Filter brands by country/industry
   const filteredBrands = useMemo(() => {
@@ -179,9 +208,38 @@ export function CustomExplorerChart({
     setActivePreset(null);
   }, []);
 
+  // Brand selection handlers
+  const handleAddBrand = useCallback((brandKey: string) => {
+    if (focusedBrands.length < 8 && !focusedBrands.includes(brandKey)) {
+      setFocusedBrands(prev => [...prev, brandKey]);
+    }
+    setBrandSearchOpen(false);
+  }, [focusedBrands]);
+
+  const handleRemoveBrand = useCallback((brandKey: string) => {
+    setFocusedBrands(prev => prev.filter(b => b !== brandKey));
+  }, []);
+
+  const handleClearAllBrands = useCallback(() => {
+    setFocusedBrands([]);
+  }, []);
+
   // Get available options for each axis (exclude the other's selection)
   const xOptions = Object.keys(PARAMETER_CONFIG).filter(k => k !== yParam) as ParameterKey[];
   const yOptions = Object.keys(PARAMETER_CONFIG).filter(k => k !== xParam) as ParameterKey[];
+
+  // Available brands for selection (filtered by country/industry)
+  const availableBrandsForSelection = useMemo(() => {
+    return filteredBrands
+      .filter(b => b[xParam] !== null && b[yParam] !== null)
+      .map(b => ({
+        key: `${b.Brand}-${b.Country}`,
+        brand: b.Brand,
+        country: b.Country,
+        industry: b.Industry,
+      }))
+      .sort((a, b) => a.brand.localeCompare(b.brand));
+  }, [filteredBrands, xParam, yParam]);
 
   // Calculate medians for the selected parameters
   const { medianX, medianY, scoreRange } = useMemo(() => {
@@ -287,7 +345,33 @@ export function CustomExplorerChart({
     return dataWithoutOutliers.filter(d => d.quadrant === zoomedQuadrant);
   }, [dataWithoutOutliers, zoomedQuadrant]);
 
-  // Calculate domain based on displayed data (for zoom)
+  // Split data into ghost layer and focused layer
+  const { ghostData, focusedData } = useMemo(() => {
+    if (focusedBrands.length === 0) {
+      return { ghostData: [], focusedData: displayData };
+    }
+    
+    const focused = displayData.filter(d => {
+      const key = `${d.brand.Brand}-${d.brand.Country}`;
+      return focusedBrands.includes(key);
+    });
+    
+    const ghost = displayData.filter(d => {
+      const key = `${d.brand.Brand}-${d.brand.Country}`;
+      return !focusedBrands.includes(key);
+    });
+    
+    return { ghostData: ghost, focusedData: focused };
+  }, [displayData, focusedBrands]);
+
+  // Get color for a focused brand
+  const getBrandColor = useCallback((brandKey: string) => {
+    const index = focusedBrands.indexOf(brandKey);
+    return BRAND_COLORS[index % BRAND_COLORS.length];
+  }, [focusedBrands]);
+
+  // Calculate domain based on ALL displayed data (for market context)
+  // Always use full data for domains to maintain market position
   const { xDomain, yDomain } = useMemo(() => {
     if (displayData.length === 0) {
       return {
@@ -445,6 +529,98 @@ export function CustomExplorerChart({
               </Button>
             ))}
           </div>
+
+          {/* Brand Selection */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Search className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-muted-foreground mr-1">Focus brands:</span>
+            
+            <Popover open={brandSearchOpen} onOpenChange={setBrandSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  disabled={focusedBrands.length >= 8}
+                >
+                  <Search className="h-3 w-3" />
+                  Add brand ({focusedBrands.length}/8)
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search brands..." />
+                  <CommandList>
+                    <CommandEmpty>No brands found.</CommandEmpty>
+                    <CommandGroup>
+                      {availableBrandsForSelection
+                        .filter(b => !focusedBrands.includes(b.key))
+                        .slice(0, 50)
+                        .map(b => (
+                          <CommandItem
+                            key={b.key}
+                            value={b.key}
+                            onSelect={() => handleAddBrand(b.key)}
+                          >
+                            <span className="font-medium">{b.brand}</span>
+                            <span className="text-muted-foreground ml-2 text-xs">
+                              {b.country} • {b.industry}
+                            </span>
+                          </CommandItem>
+                        ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {/* Selected brand chips */}
+            {focusedBrands.map((brandKey, index) => {
+              const brandInfo = availableBrandsForSelection.find(b => b.key === brandKey);
+              return (
+                <Badge
+                  key={brandKey}
+                  variant="secondary"
+                  className="h-7 gap-1 pl-2 pr-1"
+                  style={{ 
+                    backgroundColor: `${BRAND_COLORS[index % BRAND_COLORS.length]}20`,
+                    borderColor: BRAND_COLORS[index % BRAND_COLORS.length],
+                    color: BRAND_COLORS[index % BRAND_COLORS.length],
+                  }}
+                >
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: BRAND_COLORS[index % BRAND_COLORS.length] }} />
+                  {brandInfo?.brand || brandKey.split('-')[0]}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 hover:bg-transparent"
+                    onClick={() => handleRemoveBrand(brandKey)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              );
+            })}
+
+            {focusedBrands.length > 0 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={handleClearAllBrands}
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Clear all
+                </Button>
+                <div className="flex items-center gap-2 ml-2 border-l pl-2">
+                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Ghost</span>
+                  <Switch checked={showGhostLayer} onCheckedChange={setShowGhostLayer} />
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -536,32 +712,57 @@ export function CustomExplorerChart({
 
               <Tooltip content={<CustomTooltip />} />
 
+              {/* Ghost Layer - all other brands (rendered first, behind) */}
+              {focusedBrands.length > 0 && showGhostLayer && ghostData.length > 0 && (
+                <Scatter
+                  data={ghostData}
+                  onClick={handleClick}
+                  cursor="pointer"
+                >
+                  {ghostData.map((entry, index) => (
+                    <Cell
+                      key={`ghost-${index}`}
+                      fill="hsl(var(--muted-foreground))"
+                      fillOpacity={0.15}
+                      r={3}
+                    />
+                  ))}
+                </Scatter>
+              )}
+
+              {/* Main Layer - focused brands (or all brands if no selection) */}
               <Scatter
-                data={displayData}
+                data={focusedData}
                 onClick={handleClick}
                 cursor="pointer"
               >
-                {displayData.map((entry, index) => {
+                {focusedData.map((entry, index) => {
+                  const brandKey = `${entry.brand.Brand}-${entry.brand.Country}`;
                   const isSelected = selectedBrand?.Brand === entry.brand.Brand;
+                  const isFocused = focusedBrands.includes(brandKey);
+                  const color = isFocused && focusedBrands.length > 0 
+                    ? getBrandColor(brandKey) 
+                    : entry.quadrantColor;
+                  
                   return (
                     <Cell
                       key={`cell-${index}`}
-                      fill={entry.quadrantColor}
-                      fillOpacity={isSelected ? 1 : 0.7}
-                      stroke={isSelected ? 'hsl(var(--foreground))' : 'none'}
-                      strokeWidth={isSelected ? 3 : 0}
+                      fill={color}
+                      fillOpacity={isSelected ? 1 : (focusedBrands.length > 0 ? 0.9 : 0.7)}
+                      stroke={isSelected ? 'hsl(var(--foreground))' : (focusedBrands.length > 0 ? color : 'none')}
+                      strokeWidth={isSelected ? 3 : (focusedBrands.length > 0 ? 2 : 0)}
                     />
                   );
                 })}
-                {showLabels && (
+                {(showLabels || focusedBrands.length > 0) && (
                   <LabelList
                     dataKey="brand.Brand"
                     position="top"
                     offset={8}
                     style={{
-                      fontSize: 10,
+                      fontSize: focusedBrands.length > 0 ? 11 : 10,
                       fill: 'hsl(var(--foreground))',
-                      fontWeight: 500,
+                      fontWeight: focusedBrands.length > 0 ? 600 : 500,
                     }}
                   />
                 )}
@@ -592,8 +793,17 @@ export function CustomExplorerChart({
         {/* Brand Count & Quadrant Zoom Controls */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
           <div className="text-xs text-muted-foreground">
-            Showing <span className="font-semibold text-foreground">{displayData.length}</span> of{' '}
-            <span className="font-semibold text-foreground">{chartData.length}</span> brands
+            {focusedBrands.length > 0 ? (
+              <>
+                <span className="font-semibold text-foreground">{focusedData.length}</span> focused brands
+                {showGhostLayer && <span className="ml-1">(+ {ghostData.length} in background)</span>}
+              </>
+            ) : (
+              <>
+                Showing <span className="font-semibold text-foreground">{displayData.length}</span> of{' '}
+                <span className="font-semibold text-foreground">{chartData.length}</span> brands
+              </>
+            )}
             {zoomedQuadrant && (
               <span className="ml-2 text-primary">(zoomed to {QUADRANT_LABELS[zoomedQuadrant].name})</span>
             )}
