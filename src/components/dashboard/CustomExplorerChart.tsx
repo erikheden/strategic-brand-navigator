@@ -228,9 +228,9 @@ export function CustomExplorerChart({
   const xOptions = Object.keys(PARAMETER_CONFIG).filter(k => k !== yParam) as ParameterKey[];
   const yOptions = Object.keys(PARAMETER_CONFIG).filter(k => k !== xParam) as ParameterKey[];
 
-  // Available brands for selection (filtered by country/industry)
+  // Available brands for selection (all brands, not filtered by country/industry)
   const availableBrandsForSelection = useMemo(() => {
-    return filteredBrands
+    return brands
       .filter(b => b[xParam] !== null && b[yParam] !== null)
       .map(b => ({
         key: `${b.Brand}-${b.Country}`,
@@ -239,7 +239,7 @@ export function CustomExplorerChart({
         industry: b.Industry,
       }))
       .sort((a, b) => a.brand.localeCompare(b.brand));
-  }, [filteredBrands, xParam, yParam]);
+  }, [brands, xParam, yParam]);
 
   // Calculate medians for the selected parameters
   const { medianX, medianY, scoreRange } = useMemo(() => {
