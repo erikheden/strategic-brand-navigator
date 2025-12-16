@@ -1902,6 +1902,30 @@ export type Database = {
         }
         Relationships: []
       }
+      SBI_Purchasing_Decision_Impact_General: {
+        Row: {
+          country: string | null
+          id: number
+          level: string | null
+          percentage: number | null
+          year: number | null
+        }
+        Insert: {
+          country?: string | null
+          id?: number
+          level?: string | null
+          percentage?: number | null
+          year?: number | null
+        }
+        Update: {
+          country?: string | null
+          id?: number
+          level?: string | null
+          percentage?: number | null
+          year?: number | null
+        }
+        Relationships: []
+      }
       SBI_purchasing_decision_industries: {
         Row: {
           category: string | null
@@ -1925,6 +1949,30 @@ export type Database = {
           impact_level?: string | null
           percentage?: number | null
           row_id?: number
+          year?: number | null
+        }
+        Relationships: []
+      }
+      SBI_Sustainability_Interest_Discussions: {
+        Row: {
+          country: string | null
+          created_at: string
+          id: number
+          percentage: number | null
+          year: number | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          id?: number
+          percentage?: number | null
+          year?: number | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          id?: number
+          percentage?: number | null
           year?: number | null
         }
         Relationships: []

@@ -788,11 +788,12 @@ export function CustomExplorerChart({
                   <LabelList
                     dataKey="brand.Brand"
                     position="top"
-                    offset={8}
+                    offset={10}
                     style={{
                       fontSize: focusedBrands.length > 0 ? 11 : 10,
-                      fill: 'hsl(var(--foreground))',
-                      fontWeight: focusedBrands.length > 0 ? 600 : 500,
+                      fill: 'hsl(var(--muted-foreground))',
+                      fontWeight: 400,
+                      textShadow: '0 0 3px hsl(var(--background)), 0 0 6px hsl(var(--background))',
                     }}
                   />
                 )}
