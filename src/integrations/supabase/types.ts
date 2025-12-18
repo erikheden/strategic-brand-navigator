@@ -617,6 +617,51 @@ export type Database = {
           },
         ]
       }
+      distribution_history: {
+        Row: {
+          contact_id: string
+          error_message: string | null
+          id: string
+          press_release_id: string
+          resend_email_id: string | null
+          sent_at: string
+          status: string
+        }
+        Insert: {
+          contact_id: string
+          error_message?: string | null
+          id?: string
+          press_release_id: string
+          resend_email_id?: string | null
+          sent_at?: string
+          status?: string
+        }
+        Update: {
+          contact_id?: string
+          error_message?: string | null
+          id?: string
+          press_release_id?: string
+          resend_email_id?: string | null
+          sent_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distribution_history_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "journalist_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distribution_history_press_release_id_fkey"
+            columns: ["press_release_id"]
+            isOneToOne: false
+            referencedRelation: "press_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       General_brand_attitude: {
         Row: {
           brand: string | null
@@ -981,6 +1026,114 @@ export type Database = {
         }
         Relationships: []
       }
+      journalist_contacts: {
+        Row: {
+          beat: string | null
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          is_active: boolean
+          last_contacted_at: string | null
+          last_name: string
+          notes: string | null
+          phone: string | null
+          publication: string | null
+          updated_at: string
+        }
+        Insert: {
+          beat?: string | null
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          is_active?: boolean
+          last_contacted_at?: string | null
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          publication?: string | null
+          updated_at?: string
+        }
+        Update: {
+          beat?: string | null
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          is_active?: boolean
+          last_contacted_at?: string | null
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          publication?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      journalist_list_members: {
+        Row: {
+          added_at: string
+          contact_id: string
+          id: string
+          list_id: string
+        }
+        Insert: {
+          added_at?: string
+          contact_id: string
+          id?: string
+          list_id: string
+        }
+        Update: {
+          added_at?: string
+          contact_id?: string
+          id?: string
+          list_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journalist_list_members_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "journalist_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journalist_list_members_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "journalist_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journalist_lists: {
+        Row: {
+          created_at: string
+          created_by_clerk_id: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_clerk_id: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_clerk_id?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       materiality_areas__age_sbi: {
         Row: {
           age_id: number
@@ -1208,6 +1361,57 @@ export type Database = {
           session_id?: string
           time_to_action?: number | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      press_releases: {
+        Row: {
+          content: string
+          created_at: string
+          created_by_clerk_id: string
+          distributed_at: string | null
+          embargo_note: string | null
+          excerpt: string | null
+          featured_image_url: string | null
+          id: string
+          published_at: string | null
+          scheduled_publish_at: string | null
+          slug: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by_clerk_id: string
+          distributed_at?: string | null
+          embargo_note?: string | null
+          excerpt?: string | null
+          featured_image_url?: string | null
+          id?: string
+          published_at?: string | null
+          scheduled_publish_at?: string | null
+          slug: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by_clerk_id?: string
+          distributed_at?: string | null
+          embargo_note?: string | null
+          excerpt?: string | null
+          featured_image_url?: string | null
+          id?: string
+          published_at?: string | null
+          scheduled_publish_at?: string | null
+          slug?: string
+          status?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
