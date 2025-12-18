@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, BarChart3, Users, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -55,7 +56,7 @@ function BenefitCard({
   title, 
   description 
 }: { 
-  icon: React.ReactNode; 
+  icon: ReactNode; 
   title: string; 
   description: string;
 }) {

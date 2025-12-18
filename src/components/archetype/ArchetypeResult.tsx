@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Brand, getQuadrant, QUADRANT_CONFIG } from '@/types/brand';
 import { TrendingUp, Activity, Flame, Target } from 'lucide-react';
 
@@ -90,7 +91,7 @@ function MetricCard({
   value, 
   sublabel 
 }: { 
-  icon: React.ReactNode; 
+  icon: ReactNode; 
   label: string; 
   value: string; 
   sublabel: string;
