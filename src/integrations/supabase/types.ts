@@ -151,6 +151,54 @@ export type Database = {
           },
         ]
       }
+      Brandi_2026_Start_Data: {
+        Row: {
+          brand: string | null
+          brand_consideration: number | null
+          brand_familiarity: number | null
+          brand_recognition: number | null
+          country: string | null
+          market_penetration: number | null
+          meta_industry: string | null
+          negative: number | null
+          neutral: number | null
+          positive: number | null
+          survey_year: number | null
+          very_negative: number | null
+          very_positive: number | null
+        }
+        Insert: {
+          brand?: string | null
+          brand_consideration?: number | null
+          brand_familiarity?: number | null
+          brand_recognition?: number | null
+          country?: string | null
+          market_penetration?: number | null
+          meta_industry?: string | null
+          negative?: number | null
+          neutral?: number | null
+          positive?: number | null
+          survey_year?: number | null
+          very_negative?: number | null
+          very_positive?: number | null
+        }
+        Update: {
+          brand?: string | null
+          brand_consideration?: number | null
+          brand_familiarity?: number | null
+          brand_recognition?: number | null
+          country?: string | null
+          market_penetration?: number | null
+          meta_industry?: string | null
+          negative?: number | null
+          neutral?: number | null
+          positive?: number | null
+          survey_year?: number | null
+          very_negative?: number | null
+          very_positive?: number | null
+        }
+        Relationships: []
+      }
       Brandi_Available_Brands: {
         Row: {
           Brand: string | null
@@ -2710,6 +2758,57 @@ export type Database = {
           name?: string
           source?: string
           whitepaper_id?: string
+        }
+        Relationships: []
+      }
+      winners: {
+        Row: {
+          brand: string
+          country: string
+          created_at: string | null
+          id: string
+          industry: string | null
+          license_accepted: boolean | null
+          license_accepted_at: string | null
+          license_accepted_by: string | null
+          license_email: string | null
+          ranking_position: number | null
+          score: number | null
+          updated_at: string | null
+          winner_type: string
+          year: number
+        }
+        Insert: {
+          brand: string
+          country: string
+          created_at?: string | null
+          id?: string
+          industry?: string | null
+          license_accepted?: boolean | null
+          license_accepted_at?: string | null
+          license_accepted_by?: string | null
+          license_email?: string | null
+          ranking_position?: number | null
+          score?: number | null
+          updated_at?: string | null
+          winner_type: string
+          year?: number
+        }
+        Update: {
+          brand?: string
+          country?: string
+          created_at?: string | null
+          id?: string
+          industry?: string | null
+          license_accepted?: boolean | null
+          license_accepted_at?: string | null
+          license_accepted_by?: string | null
+          license_email?: string | null
+          ranking_position?: number | null
+          score?: number | null
+          updated_at?: string | null
+          winner_type?: string
+          year?: number
         }
         Relationships: []
       }
