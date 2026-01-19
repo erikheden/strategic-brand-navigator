@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -36,10 +36,26 @@ interface MarketDeviationChartProps {
 }
 
 export const MarketDeviationChart = ({ className }: MarketDeviationChartProps) => {
-  const { loading, error, countries, getBrandsForCountry, getDeviationData } = useMarketDeviationData();
+  const { 
+    loading, 
+    loadingCountry,
+    error, 
+    countries, 
+    fetchBrandScoresForCountry,
+    getBrandsForCountry, 
+    getDeviationData 
+  } = useMarketDeviationData();
+  
   const [selectedCountry, setSelectedCountry] = useState<string>('Sweden');
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [brandSearch, setBrandSearch] = useState('');
+
+  // Fetch brand scores when country changes
+  useEffect(() => {
+    if (selectedCountry) {
+      fetchBrandScoresForCountry(selectedCountry);
+    }
+  }, [selectedCountry, fetchBrandScoresForCountry]);
 
   const availableBrands = useMemo(() => {
     if (!selectedCountry) return [];
@@ -166,10 +182,10 @@ export const MarketDeviationChart = ({ className }: MarketDeviationChartProps) =
             <Select
               value=""
               onValueChange={handleAddBrand}
-              disabled={selectedBrands.length >= 8}
+              disabled={selectedBrands.length >= 8 || loadingCountry === selectedCountry}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Search and add brands..." />
+                <SelectValue placeholder={loadingCountry === selectedCountry ? "Loading brands..." : "Search and add brands..."} />
               </SelectTrigger>
               <SelectContent>
                 <div className="p-2">
