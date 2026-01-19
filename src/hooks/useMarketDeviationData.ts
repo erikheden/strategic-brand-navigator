@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface MarketAverage {
@@ -18,7 +18,7 @@ interface BrandScore {
 interface DeviationDataPoint {
   year: number;
   marketAverage: number;
-  [key: string]: number; // brand deviation values
+  [key: string]: number;
 }
 
 // Map country codes to full names
@@ -29,25 +29,19 @@ const countryCodeMap: Record<string, string> = {
   'FI': 'Finland',
 };
 
-const countryNameToCode: Record<string, string> = {
-  'Sweden': 'SE',
-  'Denmark': 'DK',
-  'Norway': 'NO',
-  'Finland': 'FI',
-};
-
 export const useMarketDeviationData = () => {
   const [marketAverages, setMarketAverages] = useState<MarketAverage[]>([]);
-  const [brandScores, setBrandScores] = useState<BrandScore[]>([]);
+  const [brandScoresByCountry, setBrandScoresByCountry] = useState<Record<string, BrandScore[]>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingCountry, setLoadingCountry] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch only market averages on initial load (small dataset)
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchMarketAverages = async () => {
       try {
         setLoading(true);
         
-        // Fetch market averages
         const { data: avgData, error: avgError } = await supabase
           .from('SBI Average Scores')
           .select('country, year, score')
@@ -57,96 +51,95 @@ export const useMarketDeviationData = () => {
 
         if (avgError) throw avgError;
 
-        // Fetch all brand scores using pagination to get complete dataset
-        const allBrandScores: any[] = [];
-        const pageSize = 1000;
-        let from = 0;
-        let hasMore = true;
-
-        while (hasMore) {
-          const { data: brandData, error: brandError } = await supabase
-            .from('SBI Ranking Scores 2011-2025')
-            .select('Brand, Country, Year, Score, industry')
-            .not('Brand', 'is', null)
-            .not('Country', 'is', null)
-            .not('Year', 'is', null)
-            .not('Score', 'is', null)
-            .range(from, from + pageSize - 1);
-
-          if (brandError) throw brandError;
-
-          if (brandData && brandData.length > 0) {
-            allBrandScores.push(...brandData);
-            from += pageSize;
-            hasMore = brandData.length === pageSize;
-          } else {
-            hasMore = false;
-          }
-        }
-
-        // Transform market averages
         const transformedAverages: MarketAverage[] = (avgData || []).map(row => ({
           country: countryCodeMap[row.country] || row.country,
           year: row.year,
           score: row.score,
         }));
 
-        // Transform brand scores
-        const transformedBrands: BrandScore[] = allBrandScores.map(row => ({
-          brand: row.Brand,
-          country: row.Country,
-          year: row.Year,
-          score: row.Score,
-          industry: row.industry || 'Unknown',
-        }));
-
         setMarketAverages(transformedAverages);
-        setBrandScores(transformedBrands);
       } catch (err) {
-        console.error('Error fetching market deviation data:', err);
+        console.error('Error fetching market averages:', err);
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchMarketAverages();
   }, []);
 
-  // Get unique countries and brands
+  // Fetch brand scores for a specific country on-demand
+  const fetchBrandScoresForCountry = useCallback(async (country: string) => {
+    if (brandScoresByCountry[country]) return; // Already fetched
+    
+    try {
+      setLoadingCountry(country);
+      setError(null);
+      
+      const { data: brandData, error: brandError } = await supabase
+        .from('SBI Ranking Scores 2011-2025')
+        .select('Brand, Country, Year, Score, industry')
+        .eq('Country', country)
+        .not('Brand', 'is', null)
+        .not('Year', 'is', null)
+        .not('Score', 'is', null);
+
+      if (brandError) throw brandError;
+
+      const transformedBrands: BrandScore[] = (brandData || []).map(row => ({
+        brand: row.Brand,
+        country: row.Country,
+        year: row.Year,
+        score: row.Score,
+        industry: row.industry || 'Unknown',
+      }));
+
+      setBrandScoresByCountry(prev => ({
+        ...prev,
+        [country]: transformedBrands,
+      }));
+    } catch (err) {
+      console.error(`Error fetching brand scores for ${country}:`, err);
+      setError(err instanceof Error ? err.message : 'Failed to load brand data');
+    } finally {
+      setLoadingCountry(null);
+    }
+  }, [brandScoresByCountry]);
+
+  // Get unique countries
   const countries = useMemo(() => {
     const uniqueCountries = [...new Set(marketAverages.map(a => a.country))];
     return uniqueCountries.sort();
   }, [marketAverages]);
 
-  const getBrandsForCountry = (country: string) => {
-    const brands = brandScores
-      .filter(b => b.country === country)
-      .map(b => b.brand);
+  // Get brands for a specific country (from cached data)
+  const getBrandsForCountry = useCallback((country: string) => {
+    const countryBrands = brandScoresByCountry[country] || [];
+    const brands = countryBrands.map(b => b.brand);
     return [...new Set(brands)].sort();
-  };
+  }, [brandScoresByCountry]);
 
-  const getIndustriesForCountry = (country: string) => {
-    const industries = brandScores
-      .filter(b => b.country === country)
-      .map(b => b.industry);
+  // Get industries for a specific country
+  const getIndustriesForCountry = useCallback((country: string) => {
+    const countryBrands = brandScoresByCountry[country] || [];
+    const industries = countryBrands.map(b => b.industry);
     return [...new Set(industries)].sort();
-  };
+  }, [brandScoresByCountry]);
 
-  const getDeviationData = (country: string, selectedBrands: string[]): DeviationDataPoint[] => {
-    // Get market averages for this country
+  // Calculate deviation data for selected brands
+  const getDeviationData = useCallback((country: string, selectedBrands: string[]): DeviationDataPoint[] => {
     const countryAverages = marketAverages
       .filter(a => a.country === country)
       .sort((a, b) => a.year - b.year);
 
     if (countryAverages.length === 0) return [];
 
-    // Get brand scores for selected brands in this country
-    const relevantBrandScores = brandScores.filter(
-      b => b.country === country && selectedBrands.includes(b.brand)
+    const countryBrandScores = brandScoresByCountry[country] || [];
+    const relevantBrandScores = countryBrandScores.filter(
+      b => selectedBrands.includes(b.brand)
     );
 
-    // Build deviation data by year
     const years = [...new Set(countryAverages.map(a => a.year))].sort();
     
     return years.map(year => {
@@ -158,7 +151,6 @@ export const useMarketDeviationData = () => {
         marketAverage,
       };
 
-      // Calculate deviation for each selected brand
       selectedBrands.forEach(brand => {
         const brandScore = relevantBrandScores.find(
           b => b.brand === brand && b.year === year
@@ -170,12 +162,19 @@ export const useMarketDeviationData = () => {
 
       return dataPoint;
     });
-  };
+  }, [marketAverages, brandScoresByCountry]);
+
+  // Get all brand scores for current country (for compatibility)
+  const brandScores = useMemo(() => {
+    return Object.values(brandScoresByCountry).flat();
+  }, [brandScoresByCountry]);
 
   return {
     loading,
+    loadingCountry,
     error,
     countries,
+    fetchBrandScoresForCountry,
     getBrandsForCountry,
     getIndustriesForCountry,
     getDeviationData,
