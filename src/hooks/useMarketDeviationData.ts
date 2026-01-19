@@ -57,20 +57,32 @@ export const useMarketDeviationData = () => {
 
         if (avgError) throw avgError;
 
-        // Fetch brand scores - simplified query without pagination
-        // We'll fetch on-demand per country to avoid timeout
-        const { data: brandData, error: brandError } = await supabase
-          .from('SBI Ranking Scores 2011-2025')
-          .select('Brand, Country, Year, Score, industry')
-          .not('Brand', 'is', null)
-          .not('Country', 'is', null)
-          .not('Year', 'is', null)
-          .not('Score', 'is', null)
-          .limit(5000);
+        // Fetch all brand scores using pagination to get complete dataset
+        const allBrandScores: any[] = [];
+        const pageSize = 1000;
+        let from = 0;
+        let hasMore = true;
 
-        if (brandError) throw brandError;
-        
-        const allBrandScores = brandData || [];
+        while (hasMore) {
+          const { data: brandData, error: brandError } = await supabase
+            .from('SBI Ranking Scores 2011-2025')
+            .select('Brand, Country, Year, Score, industry')
+            .not('Brand', 'is', null)
+            .not('Country', 'is', null)
+            .not('Year', 'is', null)
+            .not('Score', 'is', null)
+            .range(from, from + pageSize - 1);
+
+          if (brandError) throw brandError;
+
+          if (brandData && brandData.length > 0) {
+            allBrandScores.push(...brandData);
+            from += pageSize;
+            hasMore = brandData.length === pageSize;
+          } else {
+            hasMore = false;
+          }
+        }
 
         // Transform market averages
         const transformedAverages: MarketAverage[] = (avgData || []).map(row => ({
