@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { HistoricalScore } from '@/hooks/useBrandIntelligence';
+import { supabase } from '@/integrations/supabase/client';
 import {
   LineChart,
   Line,
@@ -10,45 +11,76 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  Legend,
 } from 'recharts';
 
 interface HistoricalPerformanceChartProps {
   data: HistoricalScore[];
   brandName: string;
+  country?: string;
 }
 
-export function HistoricalPerformanceChart({ data, brandName }: HistoricalPerformanceChartProps) {
-  const { chartData, avgScore, minScore, maxScore, yoyChanges } = useMemo(() => {
+export function HistoricalPerformanceChart({ data, brandName, country }: HistoricalPerformanceChartProps) {
+  const [marketAverages, setMarketAverages] = useState<{ year: number; score: number }[]>([]);
+
+  // Fetch market averages for the country
+  useEffect(() => {
+    async function fetchMarketAverages() {
+      if (!country) return;
+
+      const { data: avgData, error } = await supabase
+        .from('SBI Average Scores')
+        .select('year, score')
+        .eq('country', country)
+        .order('year', { ascending: true });
+
+      if (!error && avgData) {
+        setMarketAverages(
+          avgData
+            .filter((d) => d.year !== null && d.score !== null)
+            .map((d) => ({ year: d.year!, score: d.score! }))
+        );
+      }
+    }
+
+    fetchMarketAverages();
+  }, [country]);
+
+  const { chartData, avgScore, minScore, maxScore } = useMemo(() => {
     if (data.length === 0) {
-      return { chartData: [], avgScore: 0, minScore: 0, maxScore: 0, yoyChanges: [] };
+      return { chartData: [], avgScore: 0, minScore: 0, maxScore: 0 };
     }
 
     const avgScore = data.reduce((a, b) => a + b.score, 0) / data.length;
-    const scores = data.map((d) => d.score);
-    const minScore = Math.min(...scores);
-    const maxScore = Math.max(...scores);
+    const allScores = [
+      ...data.map((d) => d.score),
+      ...marketAverages.map((m) => m.score),
+    ];
+    const minScore = Math.min(...allScores);
+    const maxScore = Math.max(...allScores);
 
-    // Calculate YoY changes
-    const yoyChanges = data.map((d, i) => {
-      if (i === 0) return { ...d, change: 0, significant: false };
-      const prevScore = data[i - 1].score;
+    // Merge brand data with market averages
+    const mergedData = data.map((d, i) => {
+      const prevScore = i > 0 ? data[i - 1].score : d.score;
       const change = d.score - prevScore;
       const percentChange = (change / prevScore) * 100;
+      const marketAvg = marketAverages.find((m) => m.year === d.year);
+      
       return {
         ...d,
         change,
         significant: Math.abs(percentChange) > 5,
+        marketAverage: marketAvg?.score || null,
       };
     });
 
     return {
-      chartData: yoyChanges,
+      chartData: mergedData,
       avgScore,
       minScore,
       maxScore,
-      yoyChanges,
     };
-  }, [data]);
+  }, [data, marketAverages]);
 
   if (data.length === 0) {
     return (
@@ -100,8 +132,8 @@ export function HistoricalPerformanceChart({ data, brandName }: HistoricalPerfor
               }}
               labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
               formatter={(value: number, name: string) => [
-                value.toFixed(1),
-                name === 'score' ? 'SBI Score' : name,
+                value?.toFixed(1) ?? 'N/A',
+                name === 'score' ? brandName : name === 'marketAverage' ? 'Market Average' : name,
               ]}
             />
             <ReferenceLine
@@ -109,17 +141,31 @@ export function HistoricalPerformanceChart({ data, brandName }: HistoricalPerfor
               stroke="hsl(var(--muted-foreground))"
               strokeDasharray="5 5"
               label={{
-                value: `Avg: ${avgScore.toFixed(1)}`,
+                value: `Brand Avg: ${avgScore.toFixed(1)}`,
                 position: 'right',
                 fontSize: 11,
                 fill: 'hsl(var(--muted-foreground))',
               }}
             />
+            {/* Market Average Line */}
+            {marketAverages.length > 0 && (
+              <Line
+                type="monotone"
+                dataKey="marketAverage"
+                stroke="hsl(var(--muted-foreground))"
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                dot={false}
+                name="marketAverage"
+              />
+            )}
+            {/* Brand Score Line */}
             <Line
               type="monotone"
               dataKey="score"
               stroke="hsl(var(--primary))"
               strokeWidth={2}
+              name="score"
               dot={(props) => {
                 const { cx, cy, payload } = props;
                 if (payload.significant) {
@@ -153,7 +199,17 @@ export function HistoricalPerformanceChart({ data, brandName }: HistoricalPerfor
         </ResponsiveContainer>
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-6 mt-4 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-center gap-4 mt-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-0.5 bg-primary rounded" />
+            <span>{brandName}</span>
+          </div>
+          {marketAverages.length > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-muted-foreground rounded" style={{ borderTop: '2px dashed' }} />
+              <span>Market Average</span>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-[hsl(var(--fortress))]" />
             <span>Significant increase (&gt;5%)</span>
