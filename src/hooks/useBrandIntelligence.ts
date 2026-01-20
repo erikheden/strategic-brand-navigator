@@ -179,7 +179,7 @@ export function useBrandIntelligence(brandName: string, country: string) {
           supabase
             .from('SBI Ranking Scores 2011-2025')
             .select('Year, Score, industry, Country, Brand')
-            .eq('Brand', brandName)
+            .ilike('Brand', brandName)
             .eq('Country', countryFullName)
             .order('Year', { ascending: true }),
 
