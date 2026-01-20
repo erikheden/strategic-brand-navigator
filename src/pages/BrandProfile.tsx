@@ -101,6 +101,7 @@ const BrandProfile = () => {
           <HistoricalPerformanceChart 
             data={data.historicalScores}
             brandName={decodedBrand}
+            country={decodedCountry}
           />
         </div>
 
