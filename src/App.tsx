@@ -9,6 +9,7 @@ import Insights from "./pages/Insights";
 import MarketDeviation from "./pages/MarketDeviation";
 import ArchetypeFinder from "./pages/ArchetypeFinder";
 import BrandScoreCard from "./pages/BrandScoreCard";
+import ChartMaker from "./pages/ChartMaker";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/market-deviation" element={<MarketDeviation />} />
           <Route path="/archetype" element={<ArchetypeFinder />} />
           <Route path="/scorecard" element={<BrandScoreCard />} />
+          <Route path="/chart-maker" element={<ChartMaker />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

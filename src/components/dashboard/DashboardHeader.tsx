@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BarChart3, Sparkles, TrendingUp, Compass } from 'lucide-react';
+import { BarChart3, Sparkles, TrendingUp, Compass, PenTool } from 'lucide-react';
 import { MethodologyModal } from './MethodologyModal';
 import { Button } from '@/components/ui/button';
 
@@ -29,6 +29,12 @@ export function DashboardHeader() {
             <Link to="/market-deviation" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Market Deviation
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/chart-maker" className="flex items-center gap-2">
+              <PenTool className="h-4 w-4" />
+              Chart Maker
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
