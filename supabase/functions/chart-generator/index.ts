@@ -101,10 +101,10 @@ serve(async (req) => {
       .map(([pattern, types]) => `- ${pattern}: ${types.join(', ')}`)
       .join('\n');
 
-    // Get OpenAI API key from environment
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiKey) {
-      throw new Error('OpenAI API key not configured');
+    // Get Lovable API key from environment (auto-provisioned)
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     const systemPrompt = `You are an expert data visualization assistant for the SB Index Brand Intelligence platform. Your job is to analyze user requests and generate chart configurations that visualize sustainability brand data.
@@ -166,31 +166,51 @@ If the request is unclear or cannot be fulfilled, respond with:
   "suggestedFollowups": ["Alternative question suggestions"]
 }`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage },
         ],
         temperature: 0.3,
         max_tokens: 1000,
-        response_format: { type: 'json_object' },
       }),
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Rate limit exceeded. Please try again later.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'AI credits exhausted. Please add funds.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
+        );
+      }
       const error = await response.text();
-      throw new Error(`OpenAI API error: ${error}`);
+      throw new Error(`AI gateway error: ${error}`);
     }
 
     const aiResponse = await response.json();
-    const chartConfig = JSON.parse(aiResponse.choices[0].message.content);
+    const content = aiResponse.choices[0].message.content;
+    
+    // Parse JSON from response (handle potential markdown code blocks)
+    let chartConfig;
+    try {
+      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/```\s*([\s\S]*?)\s*```/);
+      chartConfig = JSON.parse(jsonMatch ? jsonMatch[1] : content);
+    } catch {
+      chartConfig = JSON.parse(content);
+    }
 
     return new Response(JSON.stringify(chartConfig), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
