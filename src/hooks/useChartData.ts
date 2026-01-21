@@ -61,7 +61,12 @@ export function useChartData(config: ChartConfiguration | null) {
       // Apply filters
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
-          query = query.eq(key, value);
+          if (Array.isArray(value)) {
+            // Use .in() for array filters
+            query = query.in(key, value);
+          } else {
+            query = query.eq(key, value);
+          }
         });
       }
 
