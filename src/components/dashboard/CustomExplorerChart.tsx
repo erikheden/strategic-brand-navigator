@@ -473,14 +473,19 @@ export function CustomExplorerChart({
   };
 
   return (
-    <Card className="shadow-card">
-      <CardHeader className="pb-2">
+    <Card className="border-border/40 bg-card/50 backdrop-blur-sm shadow-card">
+      <CardHeader className="pb-3 border-b border-border/40">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <SlidersHorizontal className="h-5 w-5 text-primary" />
-              Custom Parameter Explorer
-            </CardTitle>
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <SlidersHorizontal className="h-5 w-5 text-primary" />
+                Custom Parameter Explorer
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Explore brand positioning across different metrics
+              </p>
+            </div>
             <div className="flex flex-wrap items-center gap-3">
               <ChartFilters
                 brands={brands}
@@ -532,9 +537,9 @@ export function CustomExplorerChart({
           </div>
           
           {/* Preset Story Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 pt-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-muted-foreground mr-1">Quick views:</span>
+            <span className="text-xs font-medium text-muted-foreground mr-1">Quick views:</span>
             {PRESET_STORIES.map((preset) => (
               <Button
                 key={preset.id}
@@ -550,9 +555,9 @@ export function CustomExplorerChart({
           </div>
 
           {/* Brand Selection */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/40">
             <Search className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-muted-foreground mr-1">Focus brands:</span>
+            <span className="text-xs font-medium text-muted-foreground mr-1">Focus brands:</span>
             
             <Popover open={brandSearchOpen} onOpenChange={(open) => {
               setBrandSearchOpen(open);
@@ -651,10 +656,10 @@ export function CustomExplorerChart({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         <div className="h-[500px] w-full relative">
           <img 
-            src={sbIndexLogo} 
+            src={sbIndexLogo}
             alt="Sustainable Brand Index" 
             className="absolute top-2 right-2 h-8 opacity-40 z-10 pointer-events-none"
           />
