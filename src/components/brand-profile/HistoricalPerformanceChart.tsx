@@ -55,7 +55,7 @@ export function HistoricalPerformanceChart({ data, brandName, country }: Histori
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch available brands for comparison
+  // Fetch available brands for comparison from database
   useEffect(() => {
     async function fetchAvailableBrands() {
       if (!country) return;
