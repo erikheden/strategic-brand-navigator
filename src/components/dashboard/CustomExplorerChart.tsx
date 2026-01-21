@@ -796,9 +796,9 @@ export function CustomExplorerChart({
                     offset={10}
                     style={{
                       fontSize: focusedBrands.length > 0 ? 13 : 11,
-                      fill: 'hsl(var(--muted-foreground))',
-                      fontWeight: 300,
-                      textShadow: '0 0 3px hsl(var(--background)), 0 0 6px hsl(var(--background))',
+                      fill: 'hsl(var(--foreground))',
+                      fontWeight: 500,
+                      textShadow: '0 0 4px hsl(var(--background)), 0 0 8px hsl(var(--background))',
                     }}
                   />
                 )}
