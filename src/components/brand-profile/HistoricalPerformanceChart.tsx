@@ -1,7 +1,23 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { HistoricalScore } from '@/hooks/useBrandIntelligence';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { X, Plus } from 'lucide-react';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   LineChart,
   Line,
@@ -11,7 +27,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Legend,
 } from 'recharts';
 
 interface HistoricalPerformanceChartProps {
@@ -20,8 +35,45 @@ interface HistoricalPerformanceChartProps {
   country?: string;
 }
 
+interface ComparisonBrand {
+  name: string;
+  data: { year: number; score: number }[];
+  color: string;
+}
+
+const COMPARISON_COLORS = [
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+];
+
 export function HistoricalPerformanceChart({ data, brandName, country }: HistoricalPerformanceChartProps) {
   const [marketAverages, setMarketAverages] = useState<{ year: number; score: number }[]>([]);
+  const [comparisonBrands, setComparisonBrands] = useState<ComparisonBrand[]>([]);
+  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch available brands for comparison
+  useEffect(() => {
+    async function fetchAvailableBrands() {
+      if (!country) return;
+
+      const { data: brandsData, error } = await supabase
+        .from('SBI Ranking Scores 2011-2025')
+        .select('Brand')
+        .eq('Country', country)
+        .order('Brand');
+
+      if (!error && brandsData) {
+        const uniqueBrands = [...new Set(brandsData.map((b) => b.Brand).filter(Boolean))] as string[];
+        setAvailableBrands(uniqueBrands.filter((b) => b !== brandName));
+      }
+    }
+
+    fetchAvailableBrands();
+  }, [country, brandName]);
 
   // Fetch market averages for the country
   useEffect(() => {
@@ -46,6 +98,39 @@ export function HistoricalPerformanceChart({ data, brandName, country }: Histori
     fetchMarketAverages();
   }, [country]);
 
+  const addComparisonBrand = useCallback(async (brand: string) => {
+    if (!country || comparisonBrands.some((b) => b.name === brand)) return;
+
+    const { data: brandData, error } = await supabase
+      .from('SBI Ranking Scores 2011-2025')
+      .select('Year, Score')
+      .eq('Brand', brand)
+      .eq('Country', country)
+      .order('Year', { ascending: true });
+
+    if (!error && brandData) {
+      const colorIndex = comparisonBrands.length % COMPARISON_COLORS.length;
+      const processedData = brandData
+        .filter((d) => d.Year !== null && d.Score !== null)
+        .map((d) => ({ year: d.Year!, score: d.Score! }));
+      
+      setComparisonBrands((prev) => [
+        ...prev,
+        {
+          name: brand,
+          data: processedData,
+          color: COMPARISON_COLORS[colorIndex],
+        },
+      ]);
+    }
+    setPopoverOpen(false);
+    setSearchQuery('');
+  }, [country, comparisonBrands]);
+
+  const removeComparisonBrand = useCallback((brand: string) => {
+    setComparisonBrands((prev) => prev.filter((b) => b.name !== brand));
+  }, []);
+
   const { chartData, avgScore, minScore, maxScore } = useMemo(() => {
     if (data.length === 0) {
       return { chartData: [], avgScore: 0, minScore: 0, maxScore: 0 };
@@ -55,24 +140,51 @@ export function HistoricalPerformanceChart({ data, brandName, country }: Histori
     const allScores = [
       ...data.map((d) => d.score),
       ...marketAverages.map((m) => m.score),
+      ...comparisonBrands.flatMap((b) => b.data.map((d) => d.score)),
     ];
     const minScore = Math.min(...allScores);
     const maxScore = Math.max(...allScores);
 
-    // Merge brand data with market averages
-    const mergedData = data.map((d, i) => {
-      const prevScore = i > 0 ? data[i - 1].score : d.score;
-      const change = d.score - prevScore;
-      const percentChange = (change / prevScore) * 100;
-      const marketAvg = marketAverages.find((m) => m.year === d.year);
-      
-      return {
-        ...d,
-        change,
-        significant: Math.abs(percentChange) > 5,
-        marketAverage: marketAvg?.score || null,
-      };
+    // Create a map of all years
+    const yearMap = new Map<number, Record<string, number | null>>();
+    
+    // Add primary brand data
+    data.forEach((d) => {
+      const existing = yearMap.get(d.year) || {};
+      yearMap.set(d.year, { ...existing, primaryScore: d.score });
     });
+
+    // Add market averages
+    marketAverages.forEach((m) => {
+      const existing = yearMap.get(m.year) || {};
+      yearMap.set(m.year, { ...existing, marketAverage: m.score });
+    });
+
+    // Add comparison brands
+    comparisonBrands.forEach((brand) => {
+      brand.data.forEach((d) => {
+        const existing = yearMap.get(d.year) || {};
+        yearMap.set(d.year, { ...existing, [brand.name]: d.score });
+      });
+    });
+
+    // Convert to array and calculate changes for primary brand
+    const mergedData = Array.from(yearMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([year, scores], i, arr) => {
+        const primaryScore = scores.primaryScore ?? null;
+        const prevScore = i > 0 ? (arr[i - 1][1].primaryScore ?? primaryScore) : primaryScore;
+        const change = primaryScore && prevScore ? primaryScore - prevScore : 0;
+        const percentChange = prevScore ? (change / prevScore) * 100 : 0;
+
+        return {
+          year,
+          score: primaryScore,
+          ...scores,
+          change,
+          significant: Math.abs(percentChange) > 5,
+        };
+      });
 
     return {
       chartData: mergedData,
@@ -80,7 +192,15 @@ export function HistoricalPerformanceChart({ data, brandName, country }: Histori
       minScore,
       maxScore,
     };
-  }, [data, marketAverages]);
+  }, [data, marketAverages, comparisonBrands]);
+
+  const filteredBrands = useMemo(() => {
+    const selectedNames = comparisonBrands.map((b) => b.name);
+    return availableBrands
+      .filter((b) => !selectedNames.includes(b))
+      .filter((b) => b.toLowerCase().includes(searchQuery.toLowerCase()))
+      .slice(0, 20);
+  }, [availableBrands, comparisonBrands, searchQuery]);
 
   if (data.length === 0) {
     return (
@@ -101,13 +221,73 @@ export function HistoricalPerformanceChart({ data, brandName, country }: Histori
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Historical Performance</CardTitle>
-        <CardDescription>
-          SBI score trajectory {data[0]?.year} - {data[data.length - 1]?.year}
-          <span className="ml-2 text-foreground font-medium">
-            (Avg: {avgScore.toFixed(1)})
-          </span>
-        </CardDescription>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg">Historical Performance</CardTitle>
+            <CardDescription>
+              SBI score trajectory {data[0]?.year} - {data[data.length - 1]?.year}
+              <span className="ml-2 text-foreground font-medium">
+                (Avg: {avgScore.toFixed(1)})
+              </span>
+            </CardDescription>
+          </div>
+          
+          {/* Brand Comparison Controls */}
+          <div className="flex flex-wrap items-center gap-2">
+            {comparisonBrands.map((brand) => (
+              <Badge
+                key={brand.name}
+                variant="secondary"
+                className="flex items-center gap-1 pr-1"
+                style={{ borderColor: brand.color, borderWidth: 2 }}
+              >
+                {brand.name}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => removeComparisonBrand(brand.name)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            ))}
+            
+            {comparisonBrands.length < 4 && (
+              <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 gap-1">
+                    <Plus className="h-3 w-3" />
+                    Add Brand
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[250px] p-0" align="end">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search brands..." 
+                      value={searchQuery}
+                      onValueChange={setSearchQuery}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No brands found.</CommandEmpty>
+                      <CommandGroup>
+                        {filteredBrands.map((brand) => (
+                          <CommandItem
+                            key={brand}
+                            value={brand}
+                            onSelect={() => addComparisonBrand(brand)}
+                          >
+                            {brand}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
@@ -131,17 +311,18 @@ export function HistoricalPerformanceChart({ data, brandName, country }: Histori
                 boxShadow: 'var(--shadow-md)',
               }}
               labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-              formatter={(value: number, name: string) => [
-                value?.toFixed(1) ?? 'N/A',
-                name === 'score' ? brandName : name === 'marketAverage' ? 'Market Average' : name,
-              ]}
+              formatter={(value: number, name: string) => {
+                if (value === null || value === undefined) return ['-', name];
+                const displayName = name === 'score' ? brandName : name === 'marketAverage' ? 'Market Average' : name;
+                return [value.toFixed(1), displayName];
+              }}
             />
             <ReferenceLine
               y={avgScore}
               stroke="hsl(var(--muted-foreground))"
               strokeDasharray="5 5"
               label={{
-                value: `Brand Avg: ${avgScore.toFixed(1)}`,
+                value: `${brandName} Avg: ${avgScore.toFixed(1)}`,
                 position: 'right',
                 fontSize: 11,
                 fill: 'hsl(var(--muted-foreground))',
@@ -157,17 +338,33 @@ export function HistoricalPerformanceChart({ data, brandName, country }: Histori
                 strokeDasharray="4 4"
                 dot={false}
                 name="marketAverage"
+                connectNulls
               />
             )}
-            {/* Brand Score Line */}
+            {/* Comparison Brand Lines */}
+            {comparisonBrands.map((brand) => (
+              <Line
+                key={brand.name}
+                type="monotone"
+                dataKey={brand.name}
+                stroke={brand.color}
+                strokeWidth={2}
+                dot={{ r: 3, fill: brand.color }}
+                name={brand.name}
+                connectNulls
+              />
+            ))}
+            {/* Primary Brand Score Line */}
             <Line
               type="monotone"
               dataKey="score"
               stroke="hsl(var(--primary))"
               strokeWidth={2}
               name="score"
+              connectNulls
               dot={(props) => {
                 const { cx, cy, payload } = props;
+                if (!cx || !cy) return <></>;
                 if (payload.significant) {
                   return (
                     <circle
@@ -204,6 +401,12 @@ export function HistoricalPerformanceChart({ data, brandName, country }: Histori
             <div className="w-4 h-0.5 bg-primary rounded" />
             <span>{brandName}</span>
           </div>
+          {comparisonBrands.map((brand) => (
+            <div key={brand.name} className="flex items-center gap-2">
+              <div className="w-4 h-0.5 rounded" style={{ backgroundColor: brand.color }} />
+              <span>{brand.name}</span>
+            </div>
+          ))}
           {marketAverages.length > 0 && (
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-muted-foreground rounded" style={{ borderTop: '2px dashed' }} />
